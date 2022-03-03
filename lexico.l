@@ -18,7 +18,6 @@ BOOL "True"|"False"
 
 "//".*      {}
 
-"/*" ([^*]|\*+[^*/])*\*+ "/"  {}
 
 "\n"		{}
 
@@ -65,8 +64,6 @@ BOOL "True"|"False"
 
 "!="        {return TK_DIFF;}
 
-
-[(){}[\];,=<>!|&]	{ return *yytext; }
 
 [(){}[\];,]	{ return *yytext; }
 
