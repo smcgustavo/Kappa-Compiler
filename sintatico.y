@@ -129,8 +129,8 @@ COMANDO 	  : E ';'
 ATRIBUICAO 	            : TK_DEC_VAR TK_ID TK_TIPO_CHAR '=' E
 						{
 							erroTipo("char", $5.tipo);
-							string nomeAuxID = genLabel();
-							$$.traducao = $5.traducao + "\t" + nomeAuxID + " = " + $5.label + ";\n";
+							$$.label = gentempcode();
+							$$.traducao = $5.traducao + "\t" + $$.label + " = " + $5.label + ";\n";
 						}
 
 						| TK_DEC_VAR TK_ID TK_TIPO_INT '=' E
@@ -144,15 +144,15 @@ ATRIBUICAO 	            : TK_DEC_VAR TK_ID TK_TIPO_CHAR '=' E
 
 								else{
 
-									string nomeAuxID = genLabel();
-									$$.traducao = $5.traducao + "\t" + nomeAuxID + " = (int) " + $5.label  + ";\n";
+									$$.label = gentempcode();
+									$$.traducao = $5.traducao + "\t" + $$.label + " = (int) " + $5.label  + ";\n";
 								}
 							}
 
 							else{
 
-								string nomeAuxID = genLabel();
-								$$.traducao = $5.traducao + "\t" + nomeAuxID + " = " + $5.label  + ";\n";
+								$$.label = gentempcode();
+								$$.traducao = $5.traducao + "\t" + $$.label + " = " + $5.label  + ";\n";
 								
 
 							}
@@ -166,14 +166,14 @@ ATRIBUICAO 	            : TK_DEC_VAR TK_ID TK_TIPO_CHAR '=' E
 									yyerror("Declaração de char/string em float não permitido!");
 								}
 								else{
-									string nomeAuxID = genLabel();
-									$$.traducao = $5.traducao + "\t" + nomeAuxID + " = (float) " + $5.label  + ";\n";
+									$$.label = gentempcode();
+									$$.traducao = $5.traducao + "\t" + $$.label + " = (float) " + $5.label  + ";\n";
 
 								}
 							}
 							else{
-								string nomeAuxID = genLabel();
-								$$.traducao = $5.traducao + "\t" + nomeAuxID + " = " + $5.label  + ";\n";
+								$$.label = gentempcode();
+								$$.traducao = $5.traducao + "\t" + $$.label + " = " + $5.label  + ";\n";
 
 							}
 						}
@@ -185,8 +185,8 @@ ATRIBUICAO 	            : TK_DEC_VAR TK_ID TK_TIPO_CHAR '=' E
 								yyerror("Tipo booleano somente aceita boleano!");
 							}
 							else{
-								string nomeAuxID = genLabel();
-								$$.traducao = $5.traducao + "\t" + nomeAuxID + " = " + $5.label  + ";\n";
+								$$.label = gentempcode();
+								$$.traducao = $5.traducao + "\t" + $$.label + " = " + $5.label  + ";\n";
 
 							}
 						}
