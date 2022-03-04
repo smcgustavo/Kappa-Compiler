@@ -1,7 +1,11 @@
 int main()
 {
 
-var b float = a;
+int a = 1;
+
+float b = 3;
+
+char h = 1;
 
 
 }

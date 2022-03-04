@@ -126,67 +126,88 @@ COMANDO 	  : E ';'
 
 
 
-ATRIBUICAO 	            : TK_DEC_VAR TK_ID TK_TIPO_CHAR '=' E
+ATRIBUICAO 	            : TK_TIPO_CHAR TK_ID  '=' E
 						{
-							erroTipo("char", $5.tipo);
-							$$.label = gentempcode();
-							$$.traducao = $5.traducao + "\t" + $$.label + " = " + $5.label + ";\n";
+							$$.tipo = "char";
+							if($$.tipo != $4.tipo){
+
+								if($4.tipo == "int" || $4.tipo == "float"){
+									yyerror("Declaração de int/flaot em char não permitido!");
+								}
+
+								else{
+
+									$$.label = gentempcode();
+									$$.traducao ="\t char" + $4.traducao + "\t" + $$.label + " = (char) " + $4.label  + ";\n";
+								}
+							}
+
+							else{
+
+								$$.label = gentempcode();
+								$$.traducao = $4.traducao + "\t" + $$.label + " = " + $4.label  + ";\n";
+								
+
+							}
 						}
 
-						| TK_DEC_VAR TK_ID TK_TIPO_INT '=' E
+						| TK_TIPO_INT TK_ID  '=' E
 						{
 							$$.tipo = "int";
-							if($$.tipo != $5.tipo){
+							if($$.tipo != $4.tipo){
 
-								if($5.tipo == "char" || $5.tipo == "string"){
+								if($4.tipo == "char" || $4.tipo == "string"){
 									yyerror("Declaração de char/string em int não permitido!");
 								}
 
 								else{
 
 									$$.label = gentempcode();
-									$$.traducao = $5.traducao + "\t" + $$.label + " = (int) " + $5.label  + ";\n";
+									$$.traducao ="\t int" + $4.traducao + "\t" + $$.label + " = (int) " + $4.label  + ";\n";
 								}
 							}
 
 							else{
 
 								$$.label = gentempcode();
-								$$.traducao = $5.traducao + "\t" + $$.label + " = " + $5.label  + ";\n";
+								$$.traducao = $4.traducao + "\t" + $$.label + " = " + $4.label  + ";\n";
 								
 
 							}
 						}
-
-						| TK_DEC_VAR TK_ID TK_TIPO_FLOAT '=' E
+						| TK_TIPO_FLOAT TK_ID  '=' E
 						{
 							$$.tipo = "float";
-							if($$.tipo != $5.tipo){
-								if($5.tipo == "char" || $5.tipo == "string"){
+							if($$.tipo != $4.tipo){
+
+								if($4.tipo == "char" || $4.tipo == "string"){
 									yyerror("Declaração de char/string em float não permitido!");
 								}
-								else{
-									$$.label = gentempcode();
-									$$.traducao = $5.traducao + "\t" + $$.label + " = (float) " + $5.label  + ";\n";
 
+								else{
+
+									$$.label = gentempcode();
+									$$.traducao ="\t float" + $4.traducao + "\t" + $$.label + " = (float) " + $4.label  + ";\n";
 								}
 							}
+
 							else{
+
 								$$.label = gentempcode();
-								$$.traducao = $5.traducao + "\t" + $$.label + " = " + $5.label  + ";\n";
+								$$.traducao = $4.traducao + "\t" + $$.label + " = " + $4.label  + ";\n";
+								
 
 							}
 						}
-
-						| TK_DEC_VAR TK_ID TK_TIPO_BOOL '=' E
+						| TK_TIPO_BOOL TK_ID  '=' E
 						{
 							$$.tipo = "bool";
-							if($$.tipo != $5.tipo){
+							if($$.tipo != $4.tipo){
 								yyerror("Tipo booleano somente aceita boleano!");
 							}
 							else{
 								$$.label = gentempcode();
-								$$.traducao = $5.traducao + "\t" + $$.label + " = " + $5.label  + ";\n";
+								$$.traducao = $4.traducao + "\t" + $$.label + " = " + $4.label  + ";\n";
 
 							}
 						}
