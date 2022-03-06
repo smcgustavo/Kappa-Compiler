@@ -220,7 +220,7 @@ ATRIBUICAO 	    : TK_TIPO_INT TK_ID //Declaração de uma variável do tipo int 
 						$$.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
 						$$.label = "";
 					}
-					else if($4.tipo == "float"){
+					else if($4.tipo == "float"|| $4.tipo == "int"){
 						variable ref;
 						ref.tipo = "float";
 						ref.nome = $2.label;
@@ -256,7 +256,7 @@ ATRIBUICAO 	    : TK_TIPO_INT TK_ID //Declaração de uma variável do tipo int 
 						$$.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
 						$$.label = "";
 					}
-					else if("char" == $4.tipo){
+					else if($4.tipo == "char"){
 						variable ref;
 						ref.tipo = "char";
 						ref.nome = $2.label;
@@ -292,7 +292,7 @@ ATRIBUICAO 	    : TK_TIPO_INT TK_ID //Declaração de uma variável do tipo int 
 						$$.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
 						$$.label = "";
 					}
-					else if("bool" == $4.tipo){
+					else if($4.tipo == "bool"){
 						variable ref;
 						ref.tipo = "bool";
 						ref.nome = $2.label;
@@ -524,12 +524,12 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 
 					bool encontrei = false;
 					bool found = false;
-					variable variavel;
 					variable var1;
+					variable var2;
 					int i;
 					for(i = 0; i < tabelaSimbolos.size();i++){//For que localiza a variavel na tabela de simbolos
 						if(tabelaSimbolos[i].nome == $1.label){
-							variavel = tabelaSimbolos[i];
+							var1 = tabelaSimbolos[i];
 							encontrei = true;
 							break;
 						}					
@@ -537,19 +537,27 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 
 					for(int y = 0; y < tabelaSimbolos.size();y++){//For que irá servir para verificar se o termo a ser atribuido é uma variável já declarada
 						if(tabelaSimbolos[y].nome == $3.label){
-							var1 = tabelaSimbolos[y];
+							var2 = tabelaSimbolos[y];
 							found = true;
 							break;
 						}					
 					}
 					
-					if(found == true && variavel.tipo == var1.tipo){//Verifica se o termo a ser atribuido é do mesmo tipo da variável a recebe-lo
-						tabelaSimbolos[i].valor = var1.valor;
-						$$.traducao ="\t " + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";//Salva o novo valor na variavel e na tabela de simbolos
+					if(encontrei == true && found == true && var1.tipo == "float" && (var2.tipo == "int" || var2.tipo == "float") ){//If que verifica se a variavel que está recebendo
+						tabelaSimbolos[i].valor = var2.valor;//a atribuição é do tipo float, permitindo ser adicionado uma variável do tipo int ou float
+						$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";//Salva o novo valor na variavel e na tabela de simbolos	
 					}
-					else if(variavel.tipo == $3.tipo && encontrei == true){//Verifica se o termo a ser atribuido é um valor qualquer
+					else if(encontrei == true && var1.tipo == "float" && ($3.tipo == "int" || $3.tipo == "float")){//Verifica se a variável que está recebendo a atribuição é do tipo
+						tabelaSimbolos[i].valor = $3.label;//float e o se o valor qualquer adicionado é do tipo int ou float para fazer a atribuição
+						$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";
+					}
+					else if(encontrei == true && found == true && var1.tipo == var2.tipo){//Verifica se o termo a ser atribuido é do mesmo tipo da variável a recebe-lo
+						tabelaSimbolos[i].valor = var2.valor;
+						$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";//Salva o novo valor na variavel e na tabela de simbolos
+					}
+					else if(var1.tipo == $3.tipo && encontrei == true){//Verifica se o termo a ser atribuido é um valor qualquer
 						tabelaSimbolos[i].valor = $3.label;
-						$$.traducao ="\t " + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";
+						$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";
 					}else{
 						yyerror("Você não declarou a variável ou o valor atribuido é diferente do tipo declarado\n");
 					}
