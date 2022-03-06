@@ -884,22 +884,22 @@ YY_RULE_SETUP
 case 21:
 YY_RULE_SETUP
 #line 74 "lexico.l"
-{ yylval.traducao = yytext; return TK_NUM;  }
+{ yylval.label = yytext; return TK_NUM;  }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
 #line 75 "lexico.l"
-{ yylval.traducao = yytext; return TK_BOOL; }
+{ yylval.label = yytext; return TK_BOOL; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
 #line 76 "lexico.l"
-{ yylval.traducao = yytext; return TK_CHAR; }
+{ yylval.label = yytext; return TK_CHAR; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
 #line 77 "lexico.l"
-{ yylval.traducao = yytext; return TK_FLOAT;}
+{ yylval.label = yytext; return TK_FLOAT;}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP

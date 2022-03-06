@@ -71,10 +71,10 @@ BOOL "True"|"False"
 
 "="		    { return '='; }
 
-{NUM}		{ yylval.traducao = yytext; return TK_NUM;  }
-{BOOL}		{ yylval.traducao = yytext; return TK_BOOL; }
-{CHAR}      { yylval.traducao = yytext; return TK_CHAR; }
-{REAL}      { yylval.traducao = yytext; return TK_FLOAT;}
+{NUM}		{ yylval.label = yytext; return TK_NUM;  }
+{BOOL}		{ yylval.label = yytext; return TK_BOOL; }
+{CHAR}      { yylval.label = yytext; return TK_CHAR; }
+{REAL}      { yylval.label = yytext; return TK_FLOAT;}
 {ID}		{ yylval.label = yytext; return TK_ID; }
 
 .			{ *yytext; }
