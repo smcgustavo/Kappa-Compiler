@@ -1,7 +1,6 @@
 int main()
-{
-
-var b float = a;
-
-
+{ 
+    int a = 2;
+    int b = 0;
+    bool c = False;
 }

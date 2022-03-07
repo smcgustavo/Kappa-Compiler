@@ -34,8 +34,8 @@
 /* Undocumented macros, especially those whose name start with YY_,
    are private implementation details.  Do not rely on them.  */
 
-#ifndef YY_YY_Y_TAB_H_INCLUDED
-# define YY_YY_Y_TAB_H_INCLUDED
+#ifndef YY_YY_SINTATICO_TAB_H_INCLUDED
+# define YY_YY_SINTATICO_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -77,47 +77,11 @@ extern int yydebug;
     TK_FLOAT = 283,
     TK_BOOL = 284,
     TK_NUM = 285,
-    TK_AND = 286,
-    TK_OR = 287,
-    TK_STRING = 288,
-    TK_FIM = 289,
-    TK_ERROR = 290
+    TK_STRING = 286,
+    TK_FIM = 287,
+    TK_ERROR = 288
   };
 #endif
-/* Tokens.  */
-#define DECLARACAO 258
-#define TK_MAIN 259
-#define TK_ENTRADA 260
-#define TK_SAIDA 261
-#define TK_ID 262
-#define TK_DEC_VAR 263
-#define TK_GLOBAL 264
-#define TK_TIPO_INT 265
-#define TK_TIPO_FLOAT 266
-#define TK_TIPO_BOOL 267
-#define TK_TIPO_CHAR 268
-#define TK_TIPO_STRING 269
-#define TK_CONV_FLOAT 270
-#define TK_CONV_INT 271
-#define TK_LE 272
-#define TK_HE 273
-#define TK_EQ 274
-#define TK_DIFF 275
-#define TK_UN_SUM 276
-#define TK_UN_SUB 277
-#define TK_NUN_SUM 278
-#define TK_NUN_SUB 279
-#define TK_NUN_MUL 280
-#define TK_NUN_DIV 281
-#define TK_CHAR 282
-#define TK_FLOAT 283
-#define TK_BOOL 284
-#define TK_NUM 285
-#define TK_AND 286
-#define TK_OR 287
-#define TK_STRING 288
-#define TK_FIM 289
-#define TK_ERROR 290
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -131,4 +95,4 @@ extern YYSTYPE yylval;
 
 int yyparse (void);
 
-#endif /* !YY_YY_Y_TAB_H_INCLUDED  */
+#endif /* !YY_YY_SINTATICO_TAB_H_INCLUDED  */

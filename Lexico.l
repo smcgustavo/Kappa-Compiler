@@ -1,6 +1,5 @@
 %{
 #include <string>
-
 %}
 
 ESPACO [ \t]
@@ -12,12 +11,14 @@ NUM {DIGITO}+
 REAL {NUM}+("."{NUM}+)?
 CHAR \'({LETRA}|{NUM})\'
 ID {LETRA}({LETRA}|{NUM})*
+BOOL "True"|"False"
 
 %%
 
-"\n"		{return TK_BREAK_LINE;}
+"//".*      {}
 
-"\t"        {return TK_TAB;}
+
+"\n"		{}
 
 {DELIM} 	{}
 
@@ -25,14 +26,54 @@ ID {LETRA}({LETRA}|{NUM})*
 
 "int"		{return TK_TIPO_INT;}
 
+"char"      {return TK_TIPO_CHAR;}
+
+"float"     {return TK_TIPO_FLOAT;}
+
+"bool"		{yylval.label = "bool"; yylval.traducao = yytext; return TK_TIPO_BOOL;}
+
+"var"       {return TK_DEC_VAR;}
+
+
+"entrada"	{return TK_ENTRADA;}
+
+"saida"		{return TK_SAIDA;}
+
+
+
+
+
+
+"(f)"		{return TK_CONV_FLOAT;}
+
+"(i)"		{return TK_CONV_INT;}
+
+"<="        {return TK_LE;}
+
+">="        {return TK_HE;}
+
+"=="        {return TK_EQ;}
+
+"!="        {return TK_DIFF;}
+
+"And"	    {return TK_AND;}
+
+"Or"		{return TK_OR;}
+
+
 [(){}[\];,]	{ return *yytext; }
 
 [+\-*/]		{ return *yytext; }
 
 "="		    { return '='; }
 
-{NUM}		{ yylval.label = yytext; return TK_NUM; }
+{NUM}		{ yylval.label = yytext; return TK_NUM;  }
+{BOOL}		{ yylval.label = yytext; return TK_BOOL; }
+{CHAR}      { yylval.label = yytext; return TK_CHAR; }
+{REAL}      { yylval.label = yytext; return TK_FLOAT;}
 {ID}		{ yylval.label = yytext; return TK_ID; }
+
+
 
 .			{ *yytext; }
 
