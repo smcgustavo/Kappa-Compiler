@@ -8,6 +8,7 @@
 #include <list>
 using std::string;
 using std::getline;
+//colocar na tabela uma variavel pra pra verificar se a mesma foi inicializada ou nao
 
 #define YYSTYPE atributos
 
@@ -19,13 +20,16 @@ typedef struct Variable{
 	string tipo;
 	string nome;
 	string valor;
+	string tmp;
 } variable;
 
 typedef struct Atributos
 {
 	string tipo;
 	string label;
+	string traducao_dec;
 	string traducao;
+	string tmp;
 } atributos;
 
 typedef struct{
@@ -36,13 +40,15 @@ typedef struct{
 } structAux; //struct auxiliar utilizada para conversões
 
 //variaveis
-int valorVar = 0;
+int valorVar = 1;
 vector<variable> tabelaSimbolos; // Vetor global para armazenar as variáveis declaradas
 
 //funções yacc
 int yylex(void);
 void yyerror(string);
 string gentempcode();
+bool verificaVariavel(string nome);
+variable acharVariable(string nome);
 
 //função geradora de label
 string genLabel();
@@ -62,11 +68,11 @@ int erroTipo(string tipo0, string tipo1);
 %token DECLARACAO
 %token TK_MAIN
 %token TK_ENTRADA TK_SAIDA
-%token TK_ID TK_DEC_VAR TK_GLOBAL
+%token TK_ID TK_DEC_VAR TK_GLOBAL 
 %token TK_TIPO_INT TK_TIPO_FLOAT TK_TIPO_BOOL TK_TIPO_CHAR TK_TIPO_STRING
 %token TK_CONV_FLOAT TK_CONV_INT TK_LE TK_HE TK_EQ TK_DIFF
 %token TK_UN_SUM TK_UN_SUB TK_NUN_SUM TK_NUN_SUB TK_NUN_MUL TK_NUN_DIV
-%token TK_CHAR TK_FLOAT TK_BOOL TK_NUM
+%token TK_CHAR TK_FLOAT TK_BOOL TK_NUM TK_ENTER
 %token TK_STRING TK_FIM TK_ERROR
 
 %start S
@@ -78,7 +84,7 @@ int erroTipo(string tipo0, string tipo1);
 %left '&'
 %left TK_EQ TK_DIFF
 %left '<' '>' TK_HE TK_LE
-%left '+' '-'
+%left  '-'
 %left '*' '/'
 %left '(' ')'
 
@@ -86,23 +92,26 @@ int erroTipo(string tipo0, string tipo1);
 %%
 S 				: TK_TIPO_INT TK_MAIN '(' ')' BLOCO
 				{
-					cout << "/*Salve Kappa!*/\n" << "#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void)\n{\n" <<  $5.traducao << "\treturn 0;\n}" << endl;
+					cout << "/*Salve Kappa!*/\n" << "#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void)\n{\n" << $5.traducao_dec <<$5.traducao << "\treturn 0;\n}" << endl;
 				}
 				;
 
 BLOCO			: '{' COMANDOS '}'
 				{
 					$$.traducao = $2.traducao;
+					$$.traducao_dec = $2.traducao_dec;
 				}
 				;
 
 COMANDOS		: COMANDO COMANDOS
 				{
 					$$.traducao = $1.traducao + $2.traducao;
+					$$.traducao_dec = $1.traducao_dec + $2.traducao_dec;
 				}
 				|
 				{
 					$$.traducao = "";
+					$$.traducao_dec = "";
 				}
 				;
 
@@ -110,7 +119,7 @@ COMANDO 		: E ';'
 				{
 					$$ = $1;
 				}
-				| ATRIBUICAO ';'
+				| ATRIBUICAO ';' 
 				{
 					$$ = $1;
 				}
@@ -118,193 +127,75 @@ COMANDO 		: E ';'
 				{
 					$$ = $1;
 				}
+				| LOGICOS ';'
+				{
+					$$ = $1;
+				}
 				;
 
-ATRIBUICAO 	    : TK_TIPO_INT TK_ID //Declaração de uma variável do tipo int sem atribuição
-				{
-					variable ref;
-					ref.tipo = "int";
-					ref.nome = $2.label;
-					ref.valor = ""; //Forço a variável a receber uma string vazia pois irei fazer comparações utilizando a string "vazia"
-					tabelaSimbolos.push_back(ref);//Salva na tabela de simbolos o tipo e o nome da variável
-					$$.traducao = "\t" + ref.tipo + " " + ref.nome + ";\n"; //Propaga para o label o tipo e o nome para futuramente printar na tela
-					$$.label = "";			
-				}
-				| TK_TIPO_FLOAT TK_ID //Declaração de uma variável do tipo float sem atribuição
-				{
-					variable ref;
-					ref.tipo = "float";
-					ref.nome = $2.label;
-					ref.valor = "";
-					tabelaSimbolos.push_back(ref);
-					$$.traducao = "\t" + ref.tipo + " " + ref.nome + ";\n";
-					$$.label = "";			
-				}
-				| TK_TIPO_CHAR TK_ID //Declaração de uma variável do tipo char sem atribuição
-				{
-					variable ref;
-					ref.tipo = "char";
-					ref.nome = $2.label;
-					ref.valor = "";
-					tabelaSimbolos.push_back(ref);
-					$$.traducao = "\t" + ref.tipo + " " + ref.nome + ";\n";
-					$$.label = "";			
-				}
-				| TK_TIPO_BOOL TK_ID //Declaração de uma variável do tipo boolean sem atribuição
-				{
-					variable ref;
-					ref.tipo = "bool";
-					ref.nome = $2.label;
-					ref.valor = "";
-					tabelaSimbolos.push_back(ref);
-					$$.traducao = "\t" + ref.tipo + " " + ref.nome + ";\n";
-					$$.label = "";			
-				}
-				|TK_TIPO_INT TK_ID '=' E //Declaração de uma variável do tipo int com atribuição. Podendo esta ser de uma outra variável ou de um valor qualquer.
-				{
-					bool achou = false;
-					variable var1;
-					for(int i = 0; i < tabelaSimbolos.size();i++){// For que verifica se a atribuição 'E' é referente a alguma variável declarada
-						if($4.label == tabelaSimbolos[i].nome){
-							if(tabelaSimbolos[i].tipo == "int"){//Verifica se a atribuição 'E' é do mesmo tipo da variavel declarada
-								var1 = tabelaSimbolos[i];
-								achou = true;
-								break;
-							}	
-						}
-					}
 
-					if(achou){//Verifica se a atribuição é de uma variável declarada
-						variable ref;
-						ref.tipo = "int";
-						ref.nome = $2.label;
-						ref.valor = var1.valor;
-						tabelaSimbolos.push_back(ref);//Salva na tabela de de simbolos o tipo , o nome e o valor atribuido àquela variavel
-						$$.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";//Propaga para o label o tipo e o nome para futuramente printar na tela
-						$$.label = "";
-					}
-					else if($4.tipo == "int"){//Verifica se a atribuição é de um valor qualquer do mesmo tipo da variável declarada
-						variable ref;
-						ref.tipo = "int";
-						ref.nome = $2.label;
-						ref.valor = $4.label;
-						tabelaSimbolos.push_back(ref);	
-						$$.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor +";\n";
-						$$.label = "";
-					}
-					else{
-						yyerror("Conteúdo não compatível com o tipo declarado\n");
-					}
-							
-				}
-				| TK_TIPO_FLOAT TK_ID '=' E //Declaração de uma variável do tipo float com atribuição. Podendo esta ser de uma outra variável ou de um valor qualquer.
+ATRIBUICAO 	    :TK_DEC_VAR TK_ID//Declaração de uma variável do tipo int sem atribuição
 				{
-					bool achou = false;
-					variable var1;
-					for(int i = 0; i < tabelaSimbolos.size();i++){
-						if($4.label == tabelaSimbolos[i].nome){
-							if(tabelaSimbolos[i].tipo == "int" || tabelaSimbolos[i].tipo == "float"){
-								var1 = tabelaSimbolos[i];
-								achou = true;
-								break;
-							}	
-						}
-					}
-
-					if(achou){
+					//variable var1;
+					//cout<<var1.nome<<endl;
+					//cout<<var1.tipo<<endl;
+					//cout<<var1.valor<<endl;
+					//cout<<var1.tmp<<endl;
+					if(verificaVariavel($2.label) != true){
 						variable ref;
-						ref.tipo = "float";
+						ref.tipo = "";
 						ref.nome = $2.label;
-						ref.valor = var1.valor;
-						tabelaSimbolos.push_back(ref);
-						$$.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
+						ref.valor = ""; //Forço a variável a receber uma string vazia pois irei fazer comparações utilizando a string "vazia"
+						ref.tmp = genLabel();
+						tabelaSimbolos.push_back(ref);//Salva na tabela de simbolos o tipo e o nome da variável
+						$$.traducao_dec = "\tvar " + ref.tmp + ";\n";
 						$$.label = "";
-					}
-					else if($4.tipo == "float"|| $4.tipo == "int"){
-						variable ref;
-						ref.tipo = "float";
-						ref.nome = $2.label;
-						ref.valor = $4.label;
-						tabelaSimbolos.push_back(ref);
-						$$.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
-						$$.label = "";
-					}
-					else{
-						yyerror("Conteúdo não compatível com o tipo declarado\n");
+					}else{
+						yyerror("Você já declarou essa variável animal\n");
 					}			
 				}
-				| TK_TIPO_CHAR TK_ID '=' E //Declaração de uma variável do tipo char com atribuição. Podendo esta ser de uma outra variável ou de um valor qualquer.
+				|TK_DEC_VAR TK_ID '=' E //Declaração de uma variável do tipo int com atribuição. Podendo esta ser de uma outra variável ou de um valor qualquer.
 				{
-					bool achou = false;
-					variable var1;
-					for(int i = 0; i < tabelaSimbolos.size();i++){
-						if($4.label == tabelaSimbolos[i].nome){
-							if(tabelaSimbolos[i].tipo == "char"){
-								var1 = tabelaSimbolos[i];
-								achou = true;
-								break;
-							}
-						}
-					}
 
-					if(achou){
+					if(verificaVariavel($4.label)){
+						variable var1 = acharVariable($4.label);
 						variable ref;
-						ref.tipo = "char";
-						ref.nome = $2.label;
-						ref.valor = var1.valor;
-						tabelaSimbolos.push_back(ref);
-						$$.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
-						$$.label = "";
-					}
-					else if($4.tipo == "char"){
-						variable ref;
-						ref.tipo = "char";
-						ref.nome = $2.label;
-						ref.valor = $4.label;
-						tabelaSimbolos.push_back(ref);
-						$$.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor +";\n";
-						$$.label = "";
+						if(var1.valor != ""){
+							ref.tipo = var1.tipo;
+							ref.nome = $2.label;
+							ref.valor = var1.valor;
+							ref.tmp = genLabel();
+							//cout<<ref.tmp<<endl;
+							//cout<<$4.tmp<<endl;
+							//cout<<ref.tmp<<endl;
+							tabelaSimbolos.push_back(ref);
+							$$.traducao_dec = "\t" + ref.tipo + " " + ref.tmp + ";\n";
+							$$.traducao = "\t" + ref.tmp + " = " + var1.tmp + ";\n";
+							$$.label = "";
+
+						}else{
+							yyerror("Voce ainda não inicialiou a variavel que está sendo atribuida");
+						}
 					}
 					else{
-						yyerror("Conteúdo não compatível com o tipo declarado\n");
-					}			
-				}
-				| TK_TIPO_BOOL TK_ID '=' E //Declaração de uma variável do tipo boolean com atribuição. Podendo esta ser de uma outra variável ou de um valor qualquer.
-				{
-					bool achou = false;
-					variable var1;
-					for(int i = 0; i < tabelaSimbolos.size();i++){
-						if($4.label == tabelaSimbolos[i].nome){
-							if(tabelaSimbolos[i].tipo == "bool"){
-								var1 = tabelaSimbolos[i];
-								achou = true;
-								break;
-							}	
-						}
+						variable ref;
+						ref.tipo = $4.tipo;
+						ref.nome = $2.label;
+						ref.valor = $4.label;
+						ref.tmp = genLabel();
+						cout<<ref.tmp<<endl;
+						cout<<$4.tmp<<endl;
+						tabelaSimbolos.push_back(ref);
+					    $$.traducao_dec = "\t" + ref.tipo + " " + ref.tmp + ";\n";
+						$$.traducao = "\t" + ref.tmp + " = " + $4.tmp + ";\n";
+						$$.label = "";
 					}
+						
 					
-					if(achou){
-						variable ref;
-						ref.tipo = "bool";
-						ref.nome = $2.label;
-						ref.valor = var1.valor;
-						tabelaSimbolos.push_back(ref);
-						$$.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
-						$$.label = "";
-					}
-					else if($4.tipo == "bool"){
-						variable ref;
-						ref.tipo = "bool";
-						ref.nome = $2.label;
-						ref.valor = $4.label;
-						tabelaSimbolos.push_back(ref);
-						$$.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
-						$$.label = "";
-					}
-					else{
-						yyerror("Conteúdo não compatível com o tipo declarado\n");
-					}			
 				}
+				;
+
+LOGICOS 		:
 				;
 
 E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declaradas ou valores quaisquer
@@ -320,6 +211,24 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 							var2 = tabelaSimbolos[i];		
 						}
 					}
+					/*if($$.tipo == "float" && var1.valor != "" && var2.valor != "" && (var1.tipo == "int" || var1.tipo == "float") &&
+					(var2.tipo == "int" || var2.tipo == "float") ){
+						//int tmp = std::stoi(var1.valor) + std::stoi(var2.valor);//já declaradas														
+						//$$.label = std::to_string(tmp);
+						$$.traducao = "testando1";
+					}
+					else if($$.tipo == "float" && ($1.tipo == "int" || $1.tipo == "float") && ($3.tipo == "int" || $1.tipo == "float")){
+						$$.traducao = "testando2";	
+					}
+					else if($$.tipo == "float" && var2.valor != "" && ($1.tipo == "int" || $1.tipo == "float") && (var2.tipo == "int" || var2.tipo == "float") ||
+					$$.tipo == "float" && var1.valor != "" && ($3.tipo == "int" || $3.tipo == "float") && (var1.tipo == "int" || var1.tipo == "float")){
+						$$.traducao = "testando3";
+					}
+					else if($$.tipo == "int" && $1.tipo == "int" && $3.tipo == "int" ||
+					 $$.tipo == "int" && var2.valor != "" && $1.tipo == "int" && var2.tipo == "int" || 
+					 $$.tipo == "int" && var1.valor != "" && var1.tipo == "int" && $3.tipo == "int" ){
+						 $$.traducao = "testando4";	
+					}*/
 					//-------------------------------------- COMPARAÇÕES INT ----------------------------------------------//
 					if($$.tipo == "int" && var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//Verifica se os dois termos a serem somados são variáveis
 						int tmp = std::stoi(var1.valor) + std::stoi(var2.valor);//já declaradas														
@@ -545,19 +454,21 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 					
 					if(encontrei == true && found == true && var1.tipo == "float" && (var2.tipo == "int" || var2.tipo == "float") ){//If que verifica se a variavel que está recebendo
 						tabelaSimbolos[i].valor = var2.valor;//a atribuição é do tipo float, permitindo ser adicionado uma variável do tipo int ou float
-						$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";//Salva o novo valor na variavel e na tabela de simbolos	
+						$$.traducao = "teste1";//$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";//Salva o novo valor na variavel e na tabela de simbolos	
 					}
 					else if(encontrei == true && var1.tipo == "float" && ($3.tipo == "int" || $3.tipo == "float")){//Verifica se a variável que está recebendo a atribuição é do tipo
 						tabelaSimbolos[i].valor = $3.label;//float e o se o valor qualquer adicionado é do tipo int ou float para fazer a atribuição
-						$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";
+						$$.traducao = "teste2";//$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";
 					}
 					else if(encontrei == true && found == true && var1.tipo == var2.tipo){//Verifica se o termo a ser atribuido é do mesmo tipo da variável a recebe-lo
 						tabelaSimbolos[i].valor = var2.valor;
-						$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";//Salva o novo valor na variavel e na tabela de simbolos
+						
+						$$.traducao = "teste3";//$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";//Salva o novo valor na variavel e na tabela de simbolos
 					}
 					else if(var1.tipo == $3.tipo && encontrei == true){//Verifica se o termo a ser atribuido é um valor qualquer
 						tabelaSimbolos[i].valor = $3.label;
-						$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";
+						//$$.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";
+						$$.traducao = "teste4";
 					}else{
 						yyerror("Você não declarou a variável ou o valor atribuido é diferente do tipo declarado\n");
 					}
@@ -565,10 +476,15 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 				| TK_NUM
 				{
 					$$.tipo = "int";
+					$$.tmp = genLabel();
+					cout<< "printando " << $$.tipo << " " << $$.tmp <<$$.label <<endl;
+					$$.traducao_dec = "\t" + $$.tipo + " " + $$.tmp + ";\n";
+					$$.traducao = "\t" + $$.tmp + " = " + $$.label + ";\n";
 				}
 				| TK_FLOAT
 				{
 					$$.tipo = "float";
+					$$.traducao = "to aqui";
 				}
 				| TK_CHAR
 				{
@@ -637,4 +553,31 @@ int erroTipo(string tipo0, string tipo1)
 	}
 	
 	return 0;
+}
+
+bool verificaVariavel(string nome){
+	for(int i = 0; i < tabelaSimbolos.size(); i++){
+		if(tabelaSimbolos[i].nome == nome){
+			return true;
+			break;
+		}
+	}
+	return false;
+}
+
+variable acharVariable(string nome){
+
+	variable var1;
+	var1.nome = "";
+	var1.tipo = "";
+	var1.valor = "";
+	var1.tmp = "";
+
+	for(int i = 0; i < tabelaSimbolos.size(); i++){
+		if(tabelaSimbolos[i].nome == nome){
+			return tabelaSimbolos[i];
+			break;
+		}
+	}
+	return var1;
 }
