@@ -1,17 +1,19 @@
 %{
 #include <string>
+
 %}
 
 ESPACO [ \t]
 DIGITO [0-9]
 LETRA [A-Za-z_]
+ENTER [ \n]
 
 DELIM {ESPACO}+
 NUM {DIGITO}+
 REAL {NUM}+("."{NUM}+)?
 CHAR \'({LETRA}|{NUM})\'
 ID {LETRA}({LETRA}|{NUM})*
-BOOL "True"|"False"
+BOOL "true"|"false"
 
 %%
 
@@ -24,6 +26,8 @@ BOOL "True"|"False"
 
 "main"		{return TK_MAIN;}
 
+
+
 "int"		{return TK_TIPO_INT;}
 
 "char"      {return TK_TIPO_CHAR;}
@@ -32,7 +36,10 @@ BOOL "True"|"False"
 
 "bool"		{yylval.label = "bool"; yylval.traducao = yytext; return TK_TIPO_BOOL;}
 
+
 "var"       {return TK_DEC_VAR;}
+
+
 
 
 "entrada"	{return TK_ENTRADA;}
@@ -42,11 +49,12 @@ BOOL "True"|"False"
 
 
 
-
-
 "(f)"		{return TK_CONV_FLOAT;}
 
 "(i)"		{return TK_CONV_INT;}
+
+
+
 
 "<="        {return TK_LE;}
 
@@ -55,10 +63,6 @@ BOOL "True"|"False"
 "=="        {return TK_EQ;}
 
 "!="        {return TK_DIFF;}
-
-"And"	    {return TK_AND;}
-
-"Or"		{return TK_OR;}
 
 
 [(){}[\];,]	{ return *yytext; }
@@ -72,8 +76,6 @@ BOOL "True"|"False"
 {CHAR}      { yylval.label = yytext; return TK_CHAR; }
 {REAL}      { yylval.label = yytext; return TK_FLOAT;}
 {ID}		{ yylval.label = yytext; return TK_ID; }
-
-
 
 .			{ *yytext; }
 

@@ -66,7 +66,7 @@
 
 
 /* First part of user prologue.  */
-#line 1 "sintatico.y"
+#line 3 "sintatico.y"
 
 #include <iostream>
 #include <sstream>
@@ -75,9 +75,9 @@
 #include <vector>
 #include <stack>
 #include <list>
-#include <algorithm>
 using std::string;
 using std::getline;
+//colocar na tabela uma variavel pra pra verificar se a mesma foi inicializada ou nao
 
 #define YYSTYPE atributos
 
@@ -89,13 +89,16 @@ typedef struct Variable{
 	string tipo;
 	string nome;
 	string valor;
+	string tmp;
 } variable;
 
 typedef struct Atributos
 {
 	string tipo;
 	string label;
+	string traducao_dec;
 	string traducao;
+	string tmp;
 } atributos;
 
 typedef struct{
@@ -106,13 +109,15 @@ typedef struct{
 } structAux; //struct auxiliar utilizada para conversões
 
 //variaveis
-int valorVar = 0;
+int valorVar = 1;
 vector<variable> tabelaSimbolos; // Vetor global para armazenar as variáveis declaradas
 
 //funções yacc
 int yylex(void);
 void yyerror(string);
 string gentempcode();
+bool verificaVariavel(string nome);
+variable acharVariable(string nome);
 
 //função geradora de label
 string genLabel();
@@ -127,7 +132,7 @@ int erroTipo(string tipo0, string tipo1);
 
 
 
-#line 131 "y.tab.c"
+#line 136 "y.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -155,7 +160,7 @@ int erroTipo(string tipo0, string tipo1);
 # undef YYERROR_VERBOSE
 # define YYERROR_VERBOSE 1
 #else
-# define YYERROR_VERBOSE 0
+# define YYERROR_VERBOSE 1
 #endif
 
 /* Use api.header.include to #include this header
@@ -203,11 +208,10 @@ extern int yydebug;
     TK_FLOAT = 283,
     TK_BOOL = 284,
     TK_NUM = 285,
-    TK_AND = 286,
-    TK_OR = 287,
-    TK_STRING = 288,
-    TK_FIM = 289,
-    TK_ERROR = 290
+    TK_ENTER = 286,
+    TK_STRING = 287,
+    TK_FIM = 288,
+    TK_ERROR = 289
   };
 #endif
 /* Tokens.  */
@@ -239,11 +243,10 @@ extern int yydebug;
 #define TK_FLOAT 283
 #define TK_BOOL 284
 #define TK_NUM 285
-#define TK_AND 286
-#define TK_OR 287
-#define TK_STRING 288
-#define TK_FIM 289
-#define TK_ERROR 290
+#define TK_ENTER 286
+#define TK_STRING 287
+#define TK_FIM 288
+#define TK_ERROR 289
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -563,19 +566,19 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  4
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   62
+#define YYLAST   51
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  51
+#define YYNTOKENS  50
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  7
+#define YYNNTS  8
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  29
+#define YYNRULES  23
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  55
+#define YYNSTATES  42
 
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   290
+#define YYMAXUTOK   289
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -590,16 +593,16 @@ static const yytype_int8 yytranslate[] =
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,    37,     2,     2,     2,     2,    39,     2,
-      46,    47,    44,    42,     2,    43,     2,    45,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,    50,
-      40,    36,    41,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,    35,     2,     2,     2,     2,    38,     2,
+      45,    46,    43,    41,     2,    42,     2,    44,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,    49,
+      39,    36,    40,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,    48,    38,    49,     2,     2,     2,     2,
+       2,     2,     2,    47,    37,    48,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -615,21 +618,20 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
-      35
+      25,    26,    27,    28,    29,    30,    31,    32,    33,    34
 };
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    88,    88,    94,   100,   105,   110,   114,   118,   124,
-     134,   144,   154,   164,   201,   237,   273,   315,   367,   419,
-     471,   527,   569,   572,   576,   580,   584,   588,   593,   597
+       0,    95,    95,   102,   109,   115,   121,   125,   129,   133,
+     140,   154,   184,   186,   255,   322,   389,   459,   503,   572,
+     579,   586,   593,   600
 };
 #endif
 
-#if YYDEBUG || YYERROR_VERBOSE || 0
+#if YYDEBUG || YYERROR_VERBOSE || 1
 /* YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
@@ -639,10 +641,11 @@ static const char *const yytname[] =
   "TK_TIPO_FLOAT", "TK_TIPO_BOOL", "TK_TIPO_CHAR", "TK_TIPO_STRING",
   "TK_CONV_FLOAT", "TK_CONV_INT", "TK_LE", "TK_HE", "TK_EQ", "TK_DIFF",
   "TK_UN_SUM", "TK_UN_SUB", "TK_NUN_SUM", "TK_NUN_SUB", "TK_NUN_MUL",
-  "TK_NUN_DIV", "TK_CHAR", "TK_FLOAT", "TK_BOOL", "TK_NUM", "TK_AND",
-  "TK_OR", "TK_STRING", "TK_FIM", "TK_ERROR", "'='", "'!'", "'|'", "'&'",
-  "'<'", "'>'", "'+'", "'-'", "'*'", "'/'", "'('", "')'", "'{'", "'}'",
-  "';'", "$accept", "S", "BLOCO", "COMANDOS", "COMANDO", "ATRIBUICAO", "E", YY_NULLPTR
+  "TK_NUN_DIV", "TK_CHAR", "TK_FLOAT", "TK_BOOL", "TK_NUM", "TK_ENTER",
+  "TK_STRING", "TK_FIM", "TK_ERROR", "'!'", "'='", "'|'", "'&'", "'<'",
+  "'>'", "'+'", "'-'", "'*'", "'/'", "'('", "')'", "'{'", "'}'", "';'",
+  "$accept", "S", "BLOCO", "COMANDOS", "COMANDO", "ATRIBUICAO", "LOGICOS",
+  "E", YY_NULLPTR
 };
 #endif
 
@@ -654,18 +657,17 @@ static const yytype_int16 yytoknum[] =
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
      265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
      275,   276,   277,   278,   279,   280,   281,   282,   283,   284,
-     285,   286,   287,   288,   289,   290,    61,    33,   124,    38,
-      60,    62,    43,    45,    42,    47,    40,    41,   123,   125,
-      59
+     285,   286,   287,   288,   289,    33,    61,   124,    38,    60,
+      62,    43,    45,    42,    47,    40,    41,   123,   125,    59
 };
 # endif
 
-#define YYPACT_NINF (-40)
+#define YYPACT_NINF (-43)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
 
-#define YYTABLE_NINF (-1)
+#define YYTABLE_NINF (-13)
 
 #define yytable_value_is_error(Yyn) \
   0
@@ -674,12 +676,11 @@ static const yytype_int16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      -7,     9,    12,   -32,   -40,   -17,    -5,    -3,   -40,    -6,
-      14,    38,    44,    45,    46,   -40,   -40,   -30,   -40,     6,
-      -3,     7,   -22,   -40,     4,    18,    20,    22,    23,    31,
-      32,   -40,   -40,   -40,     8,     8,     8,     8,   -40,   -30,
-     -26,     8,     8,     8,     8,   -40,   -40,   -39,   -39,   -40,
-     -40,   -26,   -26,   -26,   -26
+      -4,     3,    15,   -23,   -43,   -25,   -14,    -3,   -43,   -26,
+       8,    27,   -43,   -43,   -43,   -43,    -1,    -3,     0,     2,
+      -6,   -43,     1,     9,   -43,   -43,   -43,   -43,     1,     1,
+       1,     1,     1,   -43,   -24,     1,    -2,   -42,   -42,   -43,
+     -43,   -24
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -688,23 +689,22 @@ static const yytype_int8 yypact[] =
 static const yytype_int8 yydefact[] =
 {
        0,     0,     0,     0,     1,     0,     0,     5,     2,     0,
-      29,     0,     0,     0,     0,    25,    24,    26,    23,     0,
-       5,     0,     0,     8,     0,     9,    10,    12,    11,     0,
-       0,     3,     4,     7,     0,     0,     0,     0,     6,    22,
-      21,     0,     0,     0,     0,    27,    28,    17,    18,    19,
-      20,    13,    14,    16,    15
+      23,     0,    21,    20,    22,    19,     0,     5,     0,     0,
+       0,     8,     0,    10,     3,     4,     7,     9,     0,     0,
+       0,     0,     0,     6,    18,     0,    17,    13,    14,    15,
+      16,    11
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -40,   -40,   -40,    42,   -40,   -40,     5
+     -43,   -43,   -43,    31,   -43,   -43,   -43,   -19
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     2,     8,    19,    20,    21,    22
+      -1,     2,     8,    16,    17,    18,    19,    20
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -712,52 +712,49 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-       9,    29,    30,     1,    10,    36,    37,    11,    12,    13,
-      14,    10,     4,     3,     5,    10,    34,    35,    36,    37,
-      34,    35,    36,    37,    15,    16,    17,    18,    38,    40,
-       6,    15,    16,    39,    18,    15,    16,    17,    18,    47,
-      48,    49,    50,     7,    23,    25,    51,    52,    53,    54,
-      24,    26,    27,    28,    41,    31,    42,    33,    43,    44,
-      45,    46,    32
+       9,    31,    32,    34,    10,    11,     1,     3,    10,    36,
+      37,    38,    39,    40,    28,     4,    41,    29,    30,    31,
+      32,     6,     5,    21,    12,    13,    14,    15,    12,    13,
+      14,    15,    28,     7,    23,    29,    30,    31,    32,    29,
+      30,    31,    32,    33,    22,    35,   -12,    24,    25,    26,
+       0,    27
 };
 
 static const yytype_int8 yycheck[] =
 {
-       3,    31,    32,    10,     7,    44,    45,    10,    11,    12,
-      13,     7,     0,     4,    46,     7,    42,    43,    44,    45,
-      42,    43,    44,    45,    27,    28,    29,    30,    50,    24,
-      47,    27,    28,    29,    30,    27,    28,    29,    30,    34,
-      35,    36,    37,    48,    50,     7,    41,    42,    43,    44,
-      36,     7,     7,     7,    36,    49,    36,    50,    36,    36,
-      29,    29,    20
+       3,    43,    44,    22,     7,     8,    10,     4,     7,    28,
+      29,    30,    31,    32,    38,     0,    35,    41,    42,    43,
+      44,    46,    45,    49,    27,    28,    29,    30,    27,    28,
+      29,    30,    38,    47,     7,    41,    42,    43,    44,    41,
+      42,    43,    44,    49,    36,    36,    49,    48,    17,    49,
+      -1,    49
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,    10,    52,     4,     0,    46,    47,    48,    53,     3,
-       7,    10,    11,    12,    13,    27,    28,    29,    30,    54,
-      55,    56,    57,    50,    36,     7,     7,     7,     7,    31,
-      32,    49,    54,    50,    42,    43,    44,    45,    50,    29,
-      57,    36,    36,    36,    36,    29,    29,    57,    57,    57,
-      57,    57,    57,    57,    57
+       0,    10,    51,     4,     0,    45,    46,    47,    52,     3,
+       7,     8,    27,    28,    29,    30,    53,    54,    55,    56,
+      57,    49,    36,     7,    48,    53,    49,    49,    38,    41,
+      42,    43,    44,    49,    57,    36,    57,    57,    57,    57,
+      57,    57
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    51,    52,    53,    54,    54,    55,    55,    55,    56,
-      56,    56,    56,    56,    56,    56,    56,    57,    57,    57,
-      57,    57,    57,    57,    57,    57,    57,    57,    57,    57
+       0,    50,    51,    52,    53,    53,    54,    54,    54,    54,
+      55,    55,    56,    57,    57,    57,    57,    57,    57,    57,
+      57,    57,    57,    57
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_int8 yyr2[] =
 {
        0,     2,     5,     3,     2,     0,     2,     2,     2,     2,
-       2,     2,     2,     4,     4,     4,     4,     3,     3,     3,
-       3,     3,     3,     1,     1,     1,     1,     3,     3,     1
+       2,     4,     0,     3,     3,     3,     3,     3,     3,     1,
+       1,     1,     1,     1
 };
 
 
@@ -1453,284 +1450,126 @@ yyreduce:
   switch (yyn)
     {
   case 2:
-#line 89 "sintatico.y"
+#line 96 "sintatico.y"
                                 {
-					cout << "/*Salve Kappa!*/\n" << "#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void)\n{\n" <<  yyvsp[0].traducao << "\treturn 0;\n}" << endl;
+					cout << "/*Salve Kappa!*/\n" << "#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void)\n{\n" << 
+					"//------------------ Escopo Variáveis ------------------\\\\ \n" << yyvsp[0].traducao_dec << "//------------------ Escopo Atribuições ------------------\\\\ \n" << yyvsp[0].traducao << "\treturn 0;\n}" << endl;
 				}
-#line 1461 "y.tab.c"
+#line 1459 "y.tab.c"
     break;
 
   case 3:
-#line 95 "sintatico.y"
+#line 103 "sintatico.y"
                                 {
 					yyval.traducao = yyvsp[-1].traducao;
+					yyval.traducao_dec = yyvsp[-1].traducao_dec;
 				}
-#line 1469 "y.tab.c"
+#line 1468 "y.tab.c"
     break;
 
   case 4:
-#line 101 "sintatico.y"
+#line 110 "sintatico.y"
                                 {
 					yyval.traducao = yyvsp[-1].traducao + yyvsp[0].traducao;
+					yyval.traducao_dec = yyvsp[-1].traducao_dec + yyvsp[0].traducao_dec;
 				}
 #line 1477 "y.tab.c"
     break;
 
   case 5:
-#line 105 "sintatico.y"
+#line 115 "sintatico.y"
                                 {
 					yyval.traducao = "";
+					yyval.traducao_dec = "";
 				}
-#line 1485 "y.tab.c"
+#line 1486 "y.tab.c"
     break;
 
   case 6:
-#line 111 "sintatico.y"
+#line 122 "sintatico.y"
                                 {
 					yyval = yyvsp[-1];
 				}
-#line 1493 "y.tab.c"
+#line 1494 "y.tab.c"
     break;
 
   case 7:
-#line 115 "sintatico.y"
+#line 126 "sintatico.y"
                                 {
 					yyval = yyvsp[-1];
 				}
-#line 1501 "y.tab.c"
+#line 1502 "y.tab.c"
     break;
 
   case 8:
-#line 119 "sintatico.y"
+#line 130 "sintatico.y"
                                 {
 					yyval = yyvsp[-1];
 				}
-#line 1509 "y.tab.c"
+#line 1510 "y.tab.c"
     break;
 
   case 9:
-#line 125 "sintatico.y"
+#line 134 "sintatico.y"
                                 {
-					variable ref;
-					ref.tipo = "int";
-					ref.nome = yyvsp[0].label;
-					ref.valor = ""; //Forço a variável a receber uma string vazia pois irei fazer comparações utilizando a string "vazia"
-					tabelaSimbolos.push_back(ref);//Salva na tabela de simbolos o tipo e o nome da variável
-					yyval.traducao = "\t" + ref.tipo + " " + ref.nome + ";\n"; //Propaga para o label o tipo e o nome para futuramente printar na tela
-					yyval.label = "";			
+					yyval = yyvsp[-1];
 				}
-#line 1523 "y.tab.c"
+#line 1518 "y.tab.c"
     break;
 
   case 10:
-#line 135 "sintatico.y"
+#line 141 "sintatico.y"
                                 {
-					variable ref;
-					ref.tipo = "float";
-					ref.nome = yyvsp[0].label;
-					ref.valor = "";
-					tabelaSimbolos.push_back(ref);
-					yyval.traducao = "\t" + ref.tipo + " " + ref.nome + ";\n";
-					yyval.label = "";			
+					if(verificaVariavel(yyvsp[0].label) != true){
+						variable ref;
+						ref.tipo = "";
+						ref.nome = yyvsp[0].label;
+						ref.valor = ""; //Forço a variável a receber uma string vazia pois irei fazer comparações utilizando a string "vazia"
+						ref.tmp = genLabel();
+						tabelaSimbolos.push_back(ref);//Salva na tabela de simbolos o tipo e o nome da variável
+						//$$.traducao = $1.traducao;
+					}else{
+						yyerror("Você já declarou essa variável animal.\n");
+					}			
 				}
-#line 1537 "y.tab.c"
+#line 1536 "y.tab.c"
     break;
 
   case 11:
-#line 145 "sintatico.y"
-                                {
-					variable ref;
-					ref.tipo = "char";
-					ref.nome = yyvsp[0].label;
-					ref.valor = "";
-					tabelaSimbolos.push_back(ref);
-					yyval.traducao = "\t" + ref.tipo + " " + ref.nome + ";\n";
-					yyval.label = "";			
-				}
-#line 1551 "y.tab.c"
-    break;
-
-  case 12:
 #line 155 "sintatico.y"
                                 {
-					variable ref;
-					ref.tipo = "bool";
-					ref.nome = yyvsp[0].label;
-					ref.valor = "";
-					tabelaSimbolos.push_back(ref);
-					yyval.traducao = "\t" + ref.tipo + " " + ref.nome + ";\n";
-					yyval.label = "";			
+					if(verificaVariavel(yyvsp[0].label) && yyvsp[0].tmp == ""){//Se eu não colocar $4.tmp == "" ele não irá interpretar quando alguma operação vier, pois quando tem alguma operação
+						variable var1 = acharVariable(yyvsp[0].label);//o $4.tmp não fica = ""
+						variable ref;
+						if(var1.valor != ""){
+							ref.tipo = var1.tipo;
+							ref.nome = yyvsp[-2].label;
+							ref.valor = var1.valor;
+							ref.tmp = genLabel();
+							tabelaSimbolos.push_back(ref);
+							yyval.traducao_dec = yyvsp[0].traducao_dec + "\t" + ref.tipo + " " + ref.tmp + ";\n";
+							yyval.traducao = yyvsp[0].traducao + "\t" + ref.tmp + " = " + var1.tmp + ";\n";
+
+						}else{
+							yyerror("Voce ainda não inicialiou a variavel que está sendo atribuida.\n");
+						}
+					}
+					else{
+						variable ref;
+						ref.tipo = yyvsp[0].tipo;
+						ref.nome = yyvsp[-2].label;
+						ref.valor = yyvsp[0].label;
+						ref.tmp = genLabel();
+						tabelaSimbolos.push_back(ref);
+					    yyval.traducao_dec = yyvsp[0].traducao_dec + "\t" + ref.tipo + " " + ref.tmp + ";\n";
+						yyval.traducao = yyvsp[0].traducao + "\t" + ref.tmp + " = " + yyvsp[0].tmp + ";\n";
+					}
 				}
-#line 1565 "y.tab.c"
+#line 1569 "y.tab.c"
     break;
 
   case 13:
-#line 165 "sintatico.y"
-                                {
-					bool achou = false;
-					variable var1;
-					for(int i = 0; i < tabelaSimbolos.size();i++){// For que verifica se a atribuição 'E' é referente a alguma variável declarada
-						if(yyvsp[0].label == tabelaSimbolos[i].nome){
-							if(tabelaSimbolos[i].tipo == "int"){//Verifica se a atribuição 'E' é do mesmo tipo da variavel declarada
-								var1 = tabelaSimbolos[i];
-								achou = true;
-								break;
-							}	
-						}
-					}
-
-					if(achou){//Verifica se a atribuição é de uma variável declarada
-						variable ref;
-						ref.tipo = "int";
-						ref.nome = yyvsp[-2].label;
-						ref.valor = var1.valor;
-						tabelaSimbolos.push_back(ref);//Salva na tabela de de simbolos o tipo , o nome e o valor atribuido àquela variavel
-						yyval.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";//Propaga para o label o tipo e o nome para futuramente printar na tela
-						yyval.label = "";
-					}
-					else if(yyvsp[0].tipo == "int"){//Verifica se a atribuição é de um valor qualquer do mesmo tipo da variável declarada
-						variable ref;
-						ref.tipo = "int";
-						ref.nome = yyvsp[-2].label;
-						ref.valor = yyvsp[0].label;
-						tabelaSimbolos.push_back(ref);	
-						yyval.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor +";\n";
-						yyval.label = "";
-					}
-					else{
-						yyerror("Conteúdo não compatível com o tipo declarado\n");
-					}
-							
-				}
-#line 1606 "y.tab.c"
-    break;
-
-  case 14:
-#line 202 "sintatico.y"
-                                {
-					bool achou = false;
-					variable var1;
-					for(int i = 0; i < tabelaSimbolos.size();i++){
-						if(yyvsp[0].label == tabelaSimbolos[i].nome){
-							if(tabelaSimbolos[i].tipo == "int" || tabelaSimbolos[i].tipo == "float"){
-								var1 = tabelaSimbolos[i];
-								achou = true;
-								break;
-							}	
-						}
-					}
-
-					if(achou){
-						variable ref;
-						ref.tipo = "float";
-						ref.nome = yyvsp[-2].label;
-						ref.valor = var1.valor;
-						tabelaSimbolos.push_back(ref);
-						yyval.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
-						yyval.label = "";
-					}
-					else if(yyvsp[0].tipo == "float"|| yyvsp[0].tipo == "int"){
-						variable ref;
-						ref.tipo = "float";
-						ref.nome = yyvsp[-2].label;
-						ref.valor = yyvsp[0].label;
-						tabelaSimbolos.push_back(ref);
-						yyval.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
-						yyval.label = "";
-					}
-					else{
-						yyerror("Conteúdo não compatível com o tipo declarado\n");
-					}			
-				}
-#line 1646 "y.tab.c"
-    break;
-
-  case 15:
-#line 238 "sintatico.y"
-                                {
-					bool achou = false;
-					variable var1;
-					for(int i = 0; i < tabelaSimbolos.size();i++){
-						if(yyvsp[0].label == tabelaSimbolos[i].nome){
-							if(tabelaSimbolos[i].tipo == "char"){
-								var1 = tabelaSimbolos[i];
-								achou = true;
-								break;
-							}
-						}
-					}
-
-					if(achou){
-						variable ref;
-						ref.tipo = "char";
-						ref.nome = yyvsp[-2].label;
-						ref.valor = var1.valor;
-						tabelaSimbolos.push_back(ref);
-						yyval.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
-						yyval.label = "";
-					}
-					else if(yyvsp[0].tipo == "char"){
-						variable ref;
-						ref.tipo = "char";
-						ref.nome = yyvsp[-2].label;
-						ref.valor = yyvsp[0].label;
-						tabelaSimbolos.push_back(ref);
-						yyval.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor +";\n";
-						yyval.label = "";
-					}
-					else{
-						yyerror("Conteúdo não compatível com o tipo declarado\n");
-					}			
-				}
-#line 1686 "y.tab.c"
-    break;
-
-  case 16:
-#line 274 "sintatico.y"
-                                {
-					bool achou = false;
-					variable var1;
-					for(int i = 0; i < tabelaSimbolos.size();i++){
-						if(yyvsp[0].label == tabelaSimbolos[i].nome){
-							if(tabelaSimbolos[i].tipo == "bool"){
-								var1 = tabelaSimbolos[i];
-								achou = true;
-								break;
-							}	
-						}
-					}
-					if(achou){
-						variable ref;
-						ref.tipo = "bool";
-						ref.nome = yyvsp[-2].label;
-						ref.valor = var1.valor;
-						tabelaSimbolos.push_back(ref);
-						yyval.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
-						yyval.label = "";
-					}
-					else if(yyvsp[0].tipo == "bool"){
-						variable ref;
-						ref.tipo = "bool";
-						ref.nome = yyvsp[-2].label;
-						if(yyvsp[0].label == "True"){
-							ref.valor = "true";
-						}
-						else if(yyvsp[0].label == "False"){
-							ref.valor = "false";
-						}
-						tabelaSimbolos.push_back(ref);
-						yyval.traducao = "\t" + ref.tipo + " " + ref.nome + " = " + ref.valor + ";\n";
-						yyval.label = "";
-					}
-					else{
-						yyerror("Conteúdo não compatível com o tipo declarado\n");
-					}			
-				}
-#line 1730 "y.tab.c"
-    break;
-
-  case 17:
-#line 316 "sintatico.y"
+#line 187 "sintatico.y"
                                 {
 					variable var1;
 					variable var2;
@@ -1743,223 +1582,332 @@ yyreduce:
 							var2 = tabelaSimbolos[i];		
 						}
 					}
-					//-------------------------------------- COMPARAÇÕES INT ----------------------------------------------//
-					if(yyval.tipo == "int" && var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//Verifica se os dois termos a serem somados são variáveis
-						int tmp = std::stoi(var1.valor) + std::stoi(var2.valor);//já declaradas														
-						yyval.label = std::to_string(tmp);
+					//-------------------------------------------------------- Soma de inteiro --------------------------------------------------------//
+					if(var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//var int + var int
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = var1.tmp + " + " + var2.tmp;
 					}
-					else if(yyval.tipo == "int" && var1.valor != "" && var1.tipo == "int" && yyvsp[0].tipo == "int"){//Verifica se o primeiro termo é uma variável declarada e o segundo termo 
-						int tmp = std::stoi(var1.valor) + std::stoi(yyvsp[0].label);//um valor qualquer
-						yyval.label = std::to_string(tmp);
+					else if(var1.valor != "" && var1.tipo == "int" && yyvsp[0].tipo == "int"){//var int + num
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = var1.tmp + " + " + yyvsp[0].tmp;
 					}
-					else if(yyval.tipo == "int" && var2.valor != "" && var2.tipo == "int" && yyvsp[-2].tipo == "int"){//Verifica se o segundo termo é uma variável declarada e o primeiro termo	 
-						int tmp = std::stoi(var2.valor) + std::stoi(yyvsp[-2].label);//um valor qualquer
-						yyval.label = std::to_string(tmp);
+					else if(var2.valor != "" && var2.tipo == "int" && yyvsp[-2].tipo == "int"){//num + var int
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = yyvsp[-2].tmp + " + " + var2.tmp;
 					}
-					else if(yyval.tipo == "int" && yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "int"){//Verifica se ambos os termos são valores quaisquer
-						int tmp = std::stoi(yyvsp[-2].label) + std::stoi(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if(yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "int"){//num + num
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = yyvsp[-2].tmp + " + " + yyvsp[0].tmp;
 					}
-					//------------------------------------------- COMPARAÇÕES FLOAT ---------------------------------------------------//
-					else if(yyval.tipo == "float" && var1.valor != "" && var2.valor != "" && (var1.tipo == "int" || var1.tipo == "float") && 
-						   (var2.tipo == "int" || var2.tipo == "float") ){//Verifica se ambos os termos a serem somados são variáveis declaráveis.Caso algum termo seja inteiro ou ambos 
-						float tmp = std::stof(var1.valor) + std::stof(var2.valor);//Já faço a conversão pra float
-						yyval.label = std::to_string(tmp);
+					//--------------------------------------------------------- Soma de float ---------------------------------------------------------//
+					else if(var1.valor != "" && var2.valor != "" && ((var1.tipo == "int" && var2.tipo == "float") || (var1.tipo == "float" && var2.tipo == "int") || (var1.tipo == "float" && var2.tipo == "float"))){//var a(int||float) + var a(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = var1.tmp + " + " + var2.tmp;
 					}
-					else if(yyval.tipo == "float" && var1.valor != "" && (var1.tipo == "int" || var1.tipo == "float") && (yyvsp[0].tipo == "int" || yyvsp[0].tipo == "float" ) ){
-						float tmp = std::stof(var1.valor) + std::stof(yyvsp[0].label);//Verifica se o primeiro termo é uma variável já declarada e o segundo termo um valor qualquer
-						yyval.label = std::to_string(tmp);//Caso tenha algum inteiro já é feita a conversão para float
+					else if(var1.valor != "" && ((var1.tipo == "int" && yyvsp[0].tipo == "float" ) || (var1.tipo == "float" && yyvsp[0].tipo == "int" ) || (var1.tipo == "float" && yyvsp[0].tipo == "float" ))){//var a(int||float) + num(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = var1.tmp + " + " + yyvsp[0].tmp;
+					}	
+					else if(var2.valor != "" && ((var2.tipo == "int" && yyvsp[-2].tipo == "float" ) || (var2.tipo == "float" && yyvsp[-2].tipo == "int" ) || (var2.tipo == "float" && yyvsp[-2].tipo == "float" ))){//num(int||float) + var a(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = yyvsp[-2].tmp + " + " + var2.tmp;
 					}
-					else if(yyval.tipo == "float" && var2.valor != "" && (var2.tipo == "int" || var2.tipo == "float") && (yyvsp[-2].tipo == "int" || yyvsp[-2].tipo == "float" ) ){
-						float tmp = std::stof(var2.valor) + std::stof(yyvsp[-2].label);//Verifica se o segundo termo é uma variável já declarada e o primeiro termo um valor qualquer
-						yyval.label = std::to_string(tmp);//Caso tenha algum inteiro já é feita a conversão para float
-					}
-					else if(yyval.tipo == "float" && (yyvsp[-2].tipo == "int" || yyvsp[-2].tipo == "float" ) && (yyvsp[0].tipo == "int" || yyvsp[0].tipo == "float" )){
-						float tmp = std::stof(yyvsp[-2].label) + std::stof(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if((yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "float" ) || (yyvsp[-2].tipo == "float" && yyvsp[0].tipo == "int" ) || (yyvsp[-2].tipo == "float" && yyvsp[0].tipo == "float" )){//num(int||float) + num(int||float)
+						string aux = genLabel();
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec + "\tfloat " + aux + ";\n";
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao + "\t" +  aux + " = (float)" + yyvsp[-2].tmp + ";\n";
+						yyval.tipo = "float";
+						yyval.tmp = aux + " + " + yyvsp[0].tmp;
 					}
 					else{
-						yyerror("Soma não permitada ou tipo não compatível\n");
+						yyerror("Soma não permitida\n");
 					}
+					
 				}
-#line 1786 "y.tab.c"
+#line 1642 "y.tab.c"
     break;
 
-  case 18:
-#line 368 "sintatico.y"
+  case 14:
+#line 256 "sintatico.y"
                                 {
 					variable var1;
 					variable var2;
 					//Não preciso verificar se a variável já foi declarada, pois já foi feita essa verificação.
-					for(int i = 0; i < tabelaSimbolos.size();i++){
+					for(int i = 0; i < tabelaSimbolos.size();i++){//For que verifica se o primeiro termo é alguma variável já declarada
 						if(yyvsp[-2].label == tabelaSimbolos[i].nome){
 							var1 = tabelaSimbolos[i];		
 						}
-						if(yyvsp[0].label == tabelaSimbolos[i].nome){
+						if(yyvsp[0].label == tabelaSimbolos[i].nome){//For que verifica se o segundo termo é alguma variável já declarada
 							var2 = tabelaSimbolos[i];		
 						}
 					}
-					//-------------------------------------- COMPARAÇÕES INT ----------------------------------------------//
-					if(yyval.tipo == "int" && var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){
-						int tmp = std::stoi(var1.valor) - std::stoi(var2.valor);
-						yyval.label = std::to_string(tmp);
+					//-------------------------------------------------------- Subtração de inteiro --------------------------------------------------------//
+					if(var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//var int - var int
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = var1.tmp + " - " + var2.tmp;
 					}
-					else if(yyval.tipo == "int" && var1.valor != "" && var1.tipo == "int" && yyvsp[0].tipo == "int"){	 
-						int tmp = std::stoi(var1.valor) - std::stoi(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if(var1.valor != "" && var1.tipo == "int" && yyvsp[0].tipo == "int"){//var int - num
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = var1.tmp + " - " + yyvsp[0].tmp;
 					}
-					else if(yyval.tipo == "int" && var2.valor != "" && var2.tipo == "int" && yyvsp[-2].tipo == "int"){	 
-						int tmp = std::stoi(var2.valor) - std::stoi(yyvsp[-2].label);
-						yyval.label = std::to_string(tmp);
+					else if(var2.valor != "" && var2.tipo == "int" && yyvsp[-2].tipo == "int"){//num - var int
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = yyvsp[-2].tmp + " - " + var2.tmp;
 					}
-					else if(yyval.tipo == "int" && yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "int"){
-						int tmp = std::stoi(yyvsp[-2].label) - std::stoi(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if(yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "int"){//num - num
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = yyvsp[-2].tmp + " - " + yyvsp[0].tmp;
 					}
-					//------------------------------------------- COMPARAÇÕES FLOAT ---------------------------------------------------//
-					else if(yyval.tipo == "float" && var1.valor != "" && var2.valor != "" && (var1.tipo == "int" || var1.tipo == "float") && 
-						   (var2.tipo == "int" || var2.tipo == "float") ){	 
-						float tmp = std::stof(var1.valor) - std::stof(var2.valor);
-						yyval.label = std::to_string(tmp);
+					//--------------------------------------------------------- Subtração de float ---------------------------------------------------------//
+					else if(var1.valor != "" && var2.valor != "" && ((var1.tipo == "int" && var2.tipo == "float") || (var1.tipo == "float" && var2.tipo == "int") || (var1.tipo == "float" && var2.tipo == "float"))){//var a(int||float) - var a(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = var1.tmp + " - " + var2.tmp;
 					}
-					else if(yyval.tipo == "float" && var1.valor != "" && (var1.tipo == "int" || var1.tipo == "float") && (yyvsp[0].tipo == "int" || yyvsp[0].tipo == "float" ) ){
-						float tmp = std::stof(var1.valor) - std::stof(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if(var1.valor != "" && ((var1.tipo == "int" && yyvsp[0].tipo == "float" ) || (var1.tipo == "float" && yyvsp[0].tipo == "int" ) || (var1.tipo == "float" && yyvsp[0].tipo == "float" ))){//var a(int||float) - num(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = var1.tmp + " - " + yyvsp[0].tmp;
+					}	
+					else if(var2.valor != "" && ((var2.tipo == "int" && yyvsp[-2].tipo == "float" ) || (var2.tipo == "float" && yyvsp[-2].tipo == "int" ) || (var2.tipo == "float" && yyvsp[-2].tipo == "float" ))){//num(int||float) - var a(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = yyvsp[-2].tmp + " - " + var2.tmp;
 					}
-					else if(yyval.tipo == "float" && var2.valor != "" && (var2.tipo == "int" || var2.tipo == "float") && (yyvsp[-2].tipo == "int" || yyvsp[-2].tipo == "float" ) ){
-						float tmp = std::stof(var2.valor) - std::stof(yyvsp[-2].label);
-						yyval.label = std::to_string(tmp);
-					}
-					else if(yyval.tipo == "float" && (yyvsp[-2].tipo == "int" || yyvsp[-2].tipo == "float" ) && (yyvsp[0].tipo == "int" || yyvsp[0].tipo == "float" )){
-						float tmp = std::stof(yyvsp[-2].label) - std::stof(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if((yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "float" ) || (yyvsp[-2].tipo == "float" && yyvsp[0].tipo == "int" ) || (yyvsp[-2].tipo == "float" && yyvsp[0].tipo == "float" )){//num(int||float) + num(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = yyvsp[-2].tmp + " - " + yyvsp[0].tmp;
 					}
 					else{
-						yyerror("Subtração não permitada ou tipo não compatível\n");
+						yyerror("Subtração não permitida\n");
 					}
 				}
-#line 1842 "y.tab.c"
+#line 1713 "y.tab.c"
     break;
 
-  case 19:
-#line 420 "sintatico.y"
+  case 15:
+#line 323 "sintatico.y"
                                 {
 					variable var1;
 					variable var2;
 					//Não preciso verificar se a variável já foi declarada, pois já foi feita essa verificação.
-					for(int i = 0; i < tabelaSimbolos.size();i++){
+					for(int i = 0; i < tabelaSimbolos.size();i++){//For que verifica se o primeiro termo é alguma variável já declarada
 						if(yyvsp[-2].label == tabelaSimbolos[i].nome){
 							var1 = tabelaSimbolos[i];		
 						}
-						if(yyvsp[0].label == tabelaSimbolos[i].nome){
+						if(yyvsp[0].label == tabelaSimbolos[i].nome){//For que verifica se o segundo termo é alguma variável já declarada
 							var2 = tabelaSimbolos[i];		
 						}
 					}
-					//-------------------------------------- COMPARAÇÕES INT ----------------------------------------------//
-					if(yyval.tipo == "int" && var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){
-						int tmp = std::stoi(var1.valor) * std::stoi(var2.valor);
-						yyval.label = std::to_string(tmp);
+					//-------------------------------------------------------- Multiplicação de inteiro --------------------------------------------------------//
+					if(var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//var int * var int
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = var1.tmp + " * " + var2.tmp;
 					}
-					else if(yyval.tipo == "int" && var1.valor != "" && var1.tipo == "int" && yyvsp[0].tipo == "int"){	 
-						int tmp = std::stoi(var1.valor) * std::stoi(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if(var1.valor != "" && var1.tipo == "int" && yyvsp[0].tipo == "int"){//var int * num
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = var1.tmp + " * " + yyvsp[0].tmp;
 					}
-					else if(yyval.tipo == "int" && var2.valor != "" && var2.tipo == "int" && yyvsp[-2].tipo == "int"){	 
-						int tmp = std::stoi(var2.valor) * std::stoi(yyvsp[-2].label);
-						yyval.label = std::to_string(tmp);
+					else if(var2.valor != "" && var2.tipo == "int" && yyvsp[-2].tipo == "int"){//num * var int
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = yyvsp[-2].tmp + " * " + var2.tmp;
 					}
-					else if(yyval.tipo == "int" && yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "int"){
-						int tmp = std::stoi(yyvsp[-2].label) * std::stoi(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if(yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "int"){//num * num
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = yyvsp[-2].tmp + " * " + yyvsp[0].tmp;
 					}
-					//------------------------------------------- COMPARAÇÕES FLOAT ---------------------------------------------------//
-					else if(yyval.tipo == "float" && var1.valor != "" && var2.valor != "" && (var1.tipo == "int" || var1.tipo == "float") && 
-						   (var2.tipo == "int" || var2.tipo == "float") ){	 
-						float tmp = std::stof(var1.valor) * std::stof(var2.valor);
-						yyval.label = std::to_string(tmp);
+					//--------------------------------------------------------- Multiplicação de float ---------------------------------------------------------//
+					else if(var1.valor != "" && var2.valor != "" && ((var1.tipo == "int" && var2.tipo == "float") || (var1.tipo == "float" && var2.tipo == "int") || (var1.tipo == "float" && var2.tipo == "float"))){//var a(int||float) * var a(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = var1.tmp + " * " + var2.tmp;
 					}
-					else if(yyval.tipo == "float" && var1.valor != "" && (var1.tipo == "int" || var1.tipo == "float") && (yyvsp[0].tipo == "int" || yyvsp[0].tipo == "float" ) ){
-						float tmp = std::stof(var1.valor) * std::stof(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if(var1.valor != "" && ((var1.tipo == "int" && yyvsp[0].tipo == "float" ) || (var1.tipo == "float" && yyvsp[0].tipo == "int" ) || (var1.tipo == "float" && yyvsp[0].tipo == "float" ))){//var a(int||float) * num(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = var1.tmp + " * " + yyvsp[0].tmp;
+					}	
+					else if(var2.valor != "" && ((var2.tipo == "int" && yyvsp[-2].tipo == "float" ) || (var2.tipo == "float" && yyvsp[-2].tipo == "int" ) || (var2.tipo == "float" && yyvsp[-2].tipo == "float" ))){//num(int||float) * var a(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = yyvsp[-2].tmp + " * " + var2.tmp;
 					}
-					else if(yyval.tipo == "float" && var2.valor != "" && (var2.tipo == "int" || var2.tipo == "float") && (yyvsp[-2].tipo == "int" || yyvsp[-2].tipo == "float" ) ){
-						float tmp = std::stof(var2.valor) * std::stof(yyvsp[-2].label);
-						yyval.label = std::to_string(tmp);
-					}
-					else if(yyval.tipo == "float" && (yyvsp[-2].tipo == "int" || yyvsp[-2].tipo == "float" ) && (yyvsp[0].tipo == "int" || yyvsp[0].tipo == "float" )){
-						float tmp = std::stof(yyvsp[-2].label) * std::stof(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if((yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "float" ) || (yyvsp[-2].tipo == "float" && yyvsp[0].tipo == "int" ) || (yyvsp[-2].tipo == "float" && yyvsp[0].tipo == "float" )){//num(int||float) * num(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = yyvsp[-2].tmp + " * " + yyvsp[0].tmp;
 					}
 					else{
-						yyerror("Multiplicação não permitada ou tipo não compatível\n");
+						yyerror("Multiplicação não permitida\n");
 					}
 				}
-#line 1898 "y.tab.c"
+#line 1784 "y.tab.c"
     break;
 
-  case 20:
-#line 472 "sintatico.y"
+  case 16:
+#line 390 "sintatico.y"
                                 {
 					variable var1;
 					variable var2;
 					//Não preciso verificar se a variável já foi declarada, pois já foi feita essa verificação.
-					for(int i = 0; i < tabelaSimbolos.size();i++){
+					for(int i = 0; i < tabelaSimbolos.size();i++){//For que verifica se o primeiro termo é alguma variável já declarada
 						if(yyvsp[-2].label == tabelaSimbolos[i].nome){
 							var1 = tabelaSimbolos[i];		
 						}
-						if(yyvsp[0].label == tabelaSimbolos[i].nome){
+						if(yyvsp[0].label == tabelaSimbolos[i].nome){//For que verifica se o segundo termo é alguma variável já declarada
 							var2 = tabelaSimbolos[i];		
 						}
 					}
-					//-----------------------VERIFICAÇÃO DIVISAO POR ZERO-----------------------//
+					//-------------------------------------------------------- Divisão de inteiro --------------------------------------------------------//
 					if(yyvsp[0].label == "0" || var2.valor == "0"){
 						yyerror("Impossível dividir por zero\n");
 					}
-					//-------------------------------------- COMPARAÇÕES INT ----------------------------------------------//
-					else if(yyval.tipo == "int" && var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){
-						int tmp = std::stoi(var1.valor) / std::stoi(var2.valor);
-						yyval.label = std::to_string(tmp);
+					else if(var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//var int / var int
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = var1.tmp + " / " + var2.tmp;
 					}
-					else if(yyval.tipo == "int" && var1.valor != "" && var1.tipo == "int" && yyvsp[0].tipo == "int"){	 
-						int tmp = std::stoi(var1.valor) / std::stoi(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if(var1.valor != "" && var1.tipo == "int" && yyvsp[0].tipo == "int"){//var int / num
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = var1.tmp + " / " + yyvsp[0].tmp;
 					}
-					else if(yyval.tipo == "int" && var2.valor != "" && var2.tipo == "int" && yyvsp[-2].tipo == "int"){	 
-						int tmp = std::stoi(var2.valor) / std::stoi(yyvsp[-2].label);
-						yyval.label = std::to_string(tmp);
+					else if(var2.valor != "" && var2.tipo == "int" && yyvsp[-2].tipo == "int"){//num / var int
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = yyvsp[-2].tmp + " / " + var2.tmp;
 					}
-					else if(yyval.tipo == "int" && yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "int"){
-						int tmp = std::stoi(yyvsp[-2].label) / std::stoi(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if(yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "int"){//num / num
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "int";
+						yyval.tmp = yyvsp[-2].tmp + " / " + yyvsp[0].tmp;
 					}
-					//------------------------------------------- COMPARAÇÕES FLOAT ---------------------------------------------------//
-					else if(yyval.tipo == "float" && var1.valor != "" && var2.valor != "" && (var1.tipo == "int" || var1.tipo == "float") && 
-						   (var2.tipo == "int" || var2.tipo == "float") ){	 
-						float tmp = std::stof(var1.valor) / std::stof(var2.valor);
-						yyval.label = std::to_string(tmp);
+					//--------------------------------------------------------- Divisão de float ---------------------------------------------------------//
+					else if(var1.valor != "" && var2.valor != "" && ((var1.tipo == "int" && var2.tipo == "float") || (var1.tipo == "float" && var2.tipo == "int") || (var1.tipo == "float" && var2.tipo == "float"))){//var a(int||float) / var a(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = var1.tmp + " / " + var2.tmp;
 					}
-					else if(yyval.tipo == "float" && var1.valor != "" && (var1.tipo == "int" || var1.tipo == "float") && (yyvsp[0].tipo == "int" || yyvsp[0].tipo == "float" ) ){
-						float tmp = std::stof(var1.valor) / std::stof(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if(var1.valor != "" && ((var1.tipo == "int" && yyvsp[0].tipo == "float" ) || (var1.tipo == "float" && yyvsp[0].tipo == "int" ) || (var1.tipo == "float" && yyvsp[0].tipo == "float" ))){//var a(int||float) / num(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = var1.tmp + " / " + yyvsp[0].tmp;
+					}	
+					else if(var2.valor != "" && ((var2.tipo == "int" && yyvsp[-2].tipo == "float" ) || (var2.tipo == "float" && yyvsp[-2].tipo == "int" ) || (var2.tipo == "float" && yyvsp[-2].tipo == "float" ))){//num(int||float) / var a(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = yyvsp[-2].tmp + " / " + var2.tmp;
 					}
-					else if(yyval.tipo == "float" && var2.valor != "" && (var2.tipo == "int" || var2.tipo == "float") && (yyvsp[-2].tipo == "int" || yyvsp[-2].tipo == "float" ) ){
-						float tmp = std::stof(var2.valor) / std::stof(yyvsp[-2].label);
-						yyval.label = std::to_string(tmp);
-					}
-					else if(yyval.tipo == "float" && (yyvsp[-2].tipo == "int" || yyvsp[-2].tipo == "float" ) && (yyvsp[0].tipo == "int" || yyvsp[0].tipo == "float" )){
-						float tmp = std::stof(yyvsp[-2].label) / std::stof(yyvsp[0].label);
-						yyval.label = std::to_string(tmp);
+					else if((yyvsp[-2].tipo == "int" && yyvsp[0].tipo == "float" ) || (yyvsp[-2].tipo == "float" && yyvsp[0].tipo == "int" ) || (yyvsp[-2].tipo == "float" && yyvsp[0].tipo == "float" )){//num(int||float) / num(int||float)
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "float";
+						yyval.tmp = yyvsp[-2].tmp + " / " + yyvsp[0].tmp;
 					}
 					else{
-						yyerror("Divisão não permitada ou tipo não compatível\n");
+						yyerror("Divisão não permitida\n");
 					}
 				}
-#line 1958 "y.tab.c"
+#line 1858 "y.tab.c"
     break;
 
-  case 21:
-#line 528 "sintatico.y"
+  case 17:
+#line 460 "sintatico.y"
                                 {	
+					variable var1;
+					variable var2;
+					//Não preciso verificar se a variável já foi declarada, pois já foi feita essa verificação.
+					for(int i = 0; i < tabelaSimbolos.size();i++){//For que verifica se o primeiro termo é alguma variável já declarada
+						if(yyvsp[-2].label == tabelaSimbolos[i].nome){
+							var1 = tabelaSimbolos[i];		
+						}
+						if(yyvsp[0].label == tabelaSimbolos[i].nome){//For que verifica se o segundo termo é alguma variável já declarada
+							var2 = tabelaSimbolos[i];		
+						}
+					}
+					//-------------------------------------------------------- Comparação de Boolean --------------------------------------------------------//
+					if(var1.valor != "" && var2.valor != "" && var1.tipo == "bool" && var2.tipo == "bool"){//var int + var int
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "bool";
+						yyval.tmp = var1.tmp + " && " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "bool" && yyvsp[0].tipo == "bool"){//var int + num
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "bool";
+						yyval.tmp = var1.tmp + " && " + yyvsp[0].tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "bool" && yyvsp[-2].tipo == "bool"){//num + var int
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "bool";
+						yyval.tmp = yyvsp[-2].tmp + " && " + var2.tmp;
+					}
+					else if(yyvsp[-2].tipo == "bool" && yyvsp[0].tipo == "bool"){//num + num
+						yyval.traducao_dec = yyvsp[-2].traducao_dec + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[-2].traducao + yyvsp[0].traducao;
+						yyval.tipo = "bool";
+						yyval.tmp = yyvsp[-2].tmp + " && " + yyvsp[0].tmp;
+					}
+					else
+					{
+						yyerror("Algo deu errado.");
+					}
+										
+				}
+#line 1906 "y.tab.c"
+    break;
+
+  case 18:
+#line 504 "sintatico.y"
+                                {
 					bool encontrei = false;
 					bool found = false;
 					variable var1;
@@ -1972,7 +1920,6 @@ yyreduce:
 							break;
 						}					
 					}
-
 					for(int y = 0; y < tabelaSimbolos.size();y++){//For que irá servir para verificar se o termo a ser atribuido é uma variável já declarada
 						if(tabelaSimbolos[y].nome == yyvsp[0].label){
 							var2 = tabelaSimbolos[y];
@@ -1980,88 +1927,103 @@ yyreduce:
 							break;
 						}					
 					}
-					if(encontrei == true && found == true && var1.tipo == "float" && (var2.tipo == "int" || var2.tipo == "float") ){//If que verifica se a variavel que está recebendo
+					//------------------------------------------------ Atribuições sem valores iniciais ------------------------------------------------//
+					if(encontrei == true && found == true && var1.tipo == "" && var2.tipo != "" && yyvsp[0].tmp == ""){//Se o $3.tmp for igual a vazio a atribuição é somente de variável
+						tabelaSimbolos[i].valor = var2.valor;													//e não da soma de duas coisas, pois se fosse da soma de duas coisas
+						tabelaSimbolos[i].tipo = var2.tipo;														//o $3.tmp iria ter valor			
+						yyval.traducao_dec ="\t" + tabelaSimbolos[i].tipo + " " + tabelaSimbolos[i].tmp + ";\n";
+						yyval.traducao =  yyvsp[0].traducao + "\t" + tabelaSimbolos[i].tmp + " = " + var2.tmp + ";\n";
+						//cout<<"Tst1"<<endl;
+					}
+					else if(encontrei == true && var1.tipo == ""){
+						tabelaSimbolos[i].valor = yyvsp[0].label;
+						tabelaSimbolos[i].tipo = yyvsp[0].tipo;
+						yyval.traducao_dec = "\t" + tabelaSimbolos[i].tipo + " " + tabelaSimbolos[i].tmp + ";\n" + yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[0].traducao + "\t" + tabelaSimbolos[i].tmp + " = " + yyvsp[0].tmp +  ";\n";
+						//cout<<"Tst2"<<endl;
+					}
+					//------------------------------------------------ Atribuições com valores iniciais ------------------------------------------------//
+					else if(encontrei == true && found == true && var1.tipo == "float" && (var2.tipo == "int" || var2.tipo == "float") ){//If que verifica se a variavel que está recebendo
 						tabelaSimbolos[i].valor = var2.valor;//a atribuição é do tipo float, permitindo ser adicionado uma variável do tipo int ou float
-						yyval.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";//Salva o novo valor na variavel e na tabela de simbolos	
+						//Não preciso do traducao_dec pois a variavel que está recebendo a atribuição e a variável que está sendo atribuida, já foram inicializadas
+						yyval.traducao_dec = yyvsp[0].traducao_dec;
+						yyval.traducao = "\t" + tabelaSimbolos[i].tmp + " = " + var2.tmp + ";\n";//Não preciso propagar o $3.traducao pois eles ja foram feitos antes
+						cout<<"Tst3"<<endl;
 					}
 					else if(encontrei == true && var1.tipo == "float" && (yyvsp[0].tipo == "int" || yyvsp[0].tipo == "float")){//Verifica se a variável que está recebendo a atribuição é do tipo
-						tabelaSimbolos[i].valor = yyvsp[0].label;//float e o se o valor qualquer adicionado é do tipo int ou float para fazer a atribuição
-						yyval.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";
+						tabelaSimbolos[i].valor = yyvsp[0].label;//float e se o valor qualquer adicionado é do tipo int ou float para fazer a atribuição
+					 	yyval.traducao_dec = yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[0].traducao + "\t" + tabelaSimbolos[i].tmp + " = " + yyvsp[0].tmp + ";\n" ;
+						//cout<<"Tst4"<<endl;
 					}
-					else if(encontrei == true && found == true && var1.tipo == var2.tipo){//Verifica se o termo a ser atribuido é do mesmo tipo da variável a recebe-lo
+					else if(encontrei == true && found == true && var1.tipo != "" && var1.tipo == var2.tipo){//Verifica se o termo a ser atribuido é do mesmo tipo da variável a recebe-lo
 						tabelaSimbolos[i].valor = var2.valor;
-						yyval.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";//Salva o novo valor na variavel e na tabela de simbolos
+						yyval.traducao_dec = yyvsp[0].traducao_dec;
+						yyval.traducao ="\t" + tabelaSimbolos[i].tmp + " = " + var2.tmp + ";\n";//Salva o novo valor na variavel e na tabela de simbolos
+						//cout<<"Tst5"<<endl;
 					}
-					else if(var1.tipo == yyvsp[0].tipo && encontrei == true){//Verifica se o termo a ser atribuido é um valor qualquer
+					else if(encontrei == true && found == false && var1.tipo == yyvsp[0].tipo){//Verifica se o termo a ser atribuido é um valor qualquer
 						tabelaSimbolos[i].valor = yyvsp[0].label;
-						yyval.traducao ="\t" + tabelaSimbolos[i].nome + " = " + tabelaSimbolos[i].valor + ";\n";
+						yyval.traducao_dec = yyvsp[0].traducao_dec;
+						yyval.traducao = yyvsp[0].traducao + "\t" + tabelaSimbolos[i].tmp + " = " + yyvsp[0].tmp + ";\n";
+						//cout<<"Tst6"<<endl;
+					}
+					else if(found == true && var2.valor == ""){
+						yyerror("Você não inicializou a variável " + yyvsp[0].label + ".\n");
 					}
 					else{
-						yyerror("Você não declarou a variável ou o valor atribuido é diferente do tipo declarado\n");
+						yyerror("Atribuição não permitida, tipo da variável a ser atribuida é diferente do tipo de atribuição.\n");
 					}
 				}
-#line 2004 "y.tab.c"
+#line 1979 "y.tab.c"
     break;
 
-  case 22:
-#line 569 "sintatico.y"
-                                                   {
-					
+  case 19:
+#line 573 "sintatico.y"
+                                {
+					yyval.tipo = "int";
+					yyval.tmp = genLabel();
+					yyval.traducao_dec = "\t" + yyval.tipo + " " + yyval.tmp + ";\n";
+					yyval.traducao = "\t" + yyval.tmp + " = " + yyval.label + ";\n";
+				}
+#line 1990 "y.tab.c"
+    break;
+
+  case 20:
+#line 580 "sintatico.y"
+                                {
+					yyval.tipo = "float";
+					yyval.tmp = genLabel();
+					yyval.traducao_dec = "\t" + yyval.tipo + " " + yyval.tmp + ";\n";
+					yyval.traducao = "\t" + yyval.tmp + " = " + yyval.label + ";\n";
+				}
+#line 2001 "y.tab.c"
+    break;
+
+  case 21:
+#line 587 "sintatico.y"
+                                {
+					yyval.tipo = "char";
+					yyval.tmp = genLabel();
+					yyval.traducao_dec = "\t" + yyval.tipo + " " + yyval.tmp + ";\n";
+					yyval.traducao = "\t" + yyval.tmp + " = " + yyval.label + ";\n";
 				}
 #line 2012 "y.tab.c"
     break;
 
-  case 23:
-#line 573 "sintatico.y"
-                                {
-					yyval.tipo = "int";
-				}
-#line 2020 "y.tab.c"
-    break;
-
-  case 24:
-#line 577 "sintatico.y"
-                                {
-					yyval.tipo = "float";
-				}
-#line 2028 "y.tab.c"
-    break;
-
-  case 25:
-#line 581 "sintatico.y"
-                                {
-					yyval.tipo = "char";
-				}
-#line 2036 "y.tab.c"
-    break;
-
-  case 26:
-#line 585 "sintatico.y"
-                                {
-					yyval.tipo = "bool";
-				}
-#line 2044 "y.tab.c"
-    break;
-
-  case 27:
-#line 589 "sintatico.y"
-                                {
-					yyval.tipo = "bool";
-					yyval.traducao = yyvsp[-2].label + " && " + yyvsp[0].label;
-				}
-#line 2053 "y.tab.c"
-    break;
-
-  case 28:
+  case 22:
 #line 594 "sintatico.y"
                                 {
-					yyval.traducao = yyvsp[-2].label + " || " + yyvsp[0].label;
+					yyval.tipo = "bool";
+					yyval.tmp = genLabel();
+					yyval.traducao_dec = "\t" + yyval.tipo + " " + yyval.tmp + ";\n";
+					yyval.traducao = "\t" + yyval.tmp + " = " + yyval.label + ";\n";
 				}
-#line 2061 "y.tab.c"
+#line 2023 "y.tab.c"
     break;
 
-  case 29:
-#line 598 "sintatico.y"
+  case 23:
+#line 601 "sintatico.y"
                                 {	
 					bool encontrei = false;
 					variable variavel;
@@ -2074,14 +2036,14 @@ yyreduce:
 					}
 
 					if(!encontrei){
-						yyerror("Você não especificou o tipo da variável ou não declarou a mesma");	
+						yyerror("Você não declarou a variável " + yyvsp[0].label + "\n");	
 					}
 				}
-#line 2081 "y.tab.c"
+#line 2043 "y.tab.c"
     break;
 
 
-#line 2085 "y.tab.c"
+#line 2047 "y.tab.c"
 
       default: break;
     }
@@ -2313,7 +2275,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 615 "sintatico.y"
+#line 618 "sintatico.y"
 
 
 #include "lex.yy.c"
@@ -2350,9 +2312,34 @@ int erroTipo(string tipo0, string tipo1)
 {
 	if (tipo1 != tipo0)
 	{
-		yyerror("tipo de variaveis incompativeis\n");
+		yyerror("Tipo de variaveis incompativeis.\n");
 
 	}
 	
 	return 0;
+}
+
+bool verificaVariavel(string nome){
+	for(int i = 0; i < tabelaSimbolos.size(); i++){
+		if(tabelaSimbolos[i].nome == nome){
+			return true;
+		}
+	}
+	return false;
+}
+
+variable acharVariable(string nome){
+
+	variable var1;
+	var1.nome = "";
+	var1.tipo = "";
+	var1.valor = "";
+	var1.tmp = "";
+
+	for(int i = 0; i < tabelaSimbolos.size(); i++){
+		if(tabelaSimbolos[i].nome == nome){
+			return tabelaSimbolos[i];
+		}
+	}
+	return var1;
 }

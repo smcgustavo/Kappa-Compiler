@@ -1,6 +1,9 @@
-int main()
-{ 
-    int a = 2;
-    int b = 0;
-    bool c = False;
+int main()  
+{
+    var a;
+    var b = true;
+    var c = true;
+    var d;
+    d = true & true;
+    a = 2 + 2.2;
 }

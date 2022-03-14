@@ -77,11 +77,10 @@ extern int yydebug;
     TK_FLOAT = 283,
     TK_BOOL = 284,
     TK_NUM = 285,
-    TK_AND = 286,
-    TK_OR = 287,
-    TK_STRING = 288,
-    TK_FIM = 289,
-    TK_ERROR = 290
+    TK_ENTER = 286,
+    TK_STRING = 287,
+    TK_FIM = 288,
+    TK_ERROR = 289
   };
 #endif
 /* Tokens.  */
@@ -113,11 +112,10 @@ extern int yydebug;
 #define TK_FLOAT 283
 #define TK_BOOL 284
 #define TK_NUM 285
-#define TK_AND 286
-#define TK_OR 287
-#define TK_STRING 288
-#define TK_FIM 289
-#define TK_ERROR 290
+#define TK_ENTER 286
+#define TK_STRING 287
+#define TK_FIM 288
+#define TK_ERROR 289
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
