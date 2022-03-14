@@ -74,8 +74,7 @@ int erroTipo(string tipo0, string tipo1);
 %token TK_TIPO_INT TK_TIPO_FLOAT TK_TIPO_BOOL TK_TIPO_CHAR TK_TIPO_STRING
 %token TK_CONV_FLOAT TK_CONV_INT TK_LE TK_HE TK_EQ TK_DIFF
 %token TK_UN_SUM TK_UN_SUB TK_NUN_SUM TK_NUN_SUB TK_NUN_MUL TK_NUN_DIV
-%token TK_CHAR TK_FLOAT TK_BOOL TK_NUM TK_ENTER
-%token TK_STRING TK_FIM TK_ERROR
+%token TK_CHAR TK_FLOAT TK_BOOL TK_NUM TK_AND TK_OR 
 
 %start S
 
@@ -499,6 +498,452 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 						yyerror("Algo deu errado.");
 					}
 										
+				}
+				| E '|' E
+				{	
+					variable var1;
+					variable var2;
+					//Não preciso verificar se a variável já foi declarada, pois já foi feita essa verificação.
+					for(int i = 0; i < tabelaSimbolos.size();i++){//For que verifica se o primeiro termo é alguma variável já declarada
+						if($1.label == tabelaSimbolos[i].nome){
+							var1 = tabelaSimbolos[i];		
+						}
+						if($3.label == tabelaSimbolos[i].nome){//For que verifica se o segundo termo é alguma variável já declarada
+							var2 = tabelaSimbolos[i];		
+						}
+					}
+					//-------------------------------------------------------- Comparação de Boolean --------------------------------------------------------//
+					if(var1.valor != "" && var2.valor != "" && var1.tipo == "bool" && var2.tipo == "bool"){//var int + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " || " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "bool" && $3.tipo == "bool"){//var int + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " || " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "bool" && $1.tipo == "bool"){//num + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " || " + var2.tmp;
+					}
+					else if($1.tipo == "bool" && $3.tipo == "bool"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " || " + $3.tmp;
+					}
+					else
+					{
+						yyerror("Algo deu errado.");
+					}
+										
+				}
+				| E '<' E
+				{
+					variable var1;
+					variable var2;
+					
+					for(int i = 0; i < tabelaSimbolos.size();i++){
+						if($1.label == tabelaSimbolos[i].nome){
+							var1 = tabelaSimbolos[i];		
+						}
+						if($3.label == tabelaSimbolos[i].nome){
+							var2 = tabelaSimbolos[i];		
+						}
+					}
+					//-------------------------------------------------------- Comparação de Inteiro --------------------------------------------------------//
+					if(var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//var int + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " < " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "int" && $3.tipo == "int"){//var int + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " < " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "int" && $1.tipo == "int"){//num + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " < " + var2.tmp;
+					}
+					else if($1.tipo == "int" && $3.tipo == "int"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " < " + $3.tmp;
+					} // Comparação entre floats
+					else if(var1.valor != "" && var2.valor != "" && var1.tipo == "float" && var2.tipo == "float"){//var float + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " < " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "float" && $3.tipo == "float"){//var float + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " < " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "float" && $1.tipo == "float"){//num + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " < " + var2.tmp;
+					}
+					else if($1.tipo == "float" && $3.tipo == "float"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " < " + $3.tmp;
+					}
+					else
+					{
+						yyerror("Algo deu errado.");
+					}
+				}
+				| E '>' E
+				{
+					variable var1;
+					variable var2;
+					
+					for(int i = 0; i < tabelaSimbolos.size();i++){
+						if($1.label == tabelaSimbolos[i].nome){
+							var1 = tabelaSimbolos[i];		
+						}
+						if($3.label == tabelaSimbolos[i].nome){
+							var2 = tabelaSimbolos[i];		
+						}
+					}
+					//-------------------------------------------------------- Comparação de Inteiro --------------------------------------------------------//
+					if(var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//var int + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " > " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "int" && $3.tipo == "int"){//var int + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " > " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "int" && $1.tipo == "int"){//num + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " > " + var2.tmp;
+					}
+					else if($1.tipo == "int" && $3.tipo == "int"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " > " + $3.tmp;
+					} // Comparação entre floats
+					else if(var1.valor != "" && var2.valor != "" && var1.tipo == "float" && var2.tipo == "float"){//var float + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " > " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "float" && $3.tipo == "float"){//var float + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " > " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "float" && $1.tipo == "float"){//num + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " > " + var2.tmp;
+					}
+					else if($1.tipo == "float" && $3.tipo == "float"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " > " + $3.tmp;
+					}
+					else
+					{
+						yyerror("Algo deu errado.");
+					}
+				}
+				| E TK_LE E
+				{
+					variable var1;
+					variable var2;
+					
+					for(int i = 0; i < tabelaSimbolos.size();i++){
+						if($1.label == tabelaSimbolos[i].nome){
+							var1 = tabelaSimbolos[i];		
+						}
+						if($3.label == tabelaSimbolos[i].nome){
+							var2 = tabelaSimbolos[i];		
+						}
+					}
+					//-------------------------------------------------------- Comparação de Inteiro --------------------------------------------------------//
+					if(var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//var int + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " <= " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "int" && $3.tipo == "int"){//var int + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " <= " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "int" && $1.tipo == "int"){//num + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " <= " + var2.tmp;
+					}
+					else if($1.tipo == "int" && $3.tipo == "int"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " <= " + $3.tmp;
+					} // Comparação entre floats
+					else if(var1.valor != "" && var2.valor != "" && var1.tipo == "float" && var2.tipo == "float"){//var float + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " <= " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "float" && $3.tipo == "float"){//var float + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " <= " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "float" && $1.tipo == "float"){//num + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " <= " + var2.tmp;
+					}
+					else if($1.tipo == "float" && $3.tipo == "float"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " <= " + $3.tmp;
+					}
+					else
+					{
+						yyerror("Algo deu errado.");
+					}
+				}
+				| E TK_HE E
+				{
+					variable var1;
+					variable var2;
+					
+					for(int i = 0; i < tabelaSimbolos.size();i++){
+						if($1.label == tabelaSimbolos[i].nome){
+							var1 = tabelaSimbolos[i];		
+						}
+						if($3.label == tabelaSimbolos[i].nome){
+							var2 = tabelaSimbolos[i];		
+						}
+					}
+					//-------------------------------------------------------- Comparação de Inteiro --------------------------------------------------------//
+					if(var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//var int + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " >= " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "int" && $3.tipo == "int"){//var int + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " >= " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "int" && $1.tipo == "int"){//num + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " >= " + var2.tmp;
+					}
+					else if($1.tipo == "int" && $3.tipo == "int"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " >= " + $3.tmp;
+					} // Comparação entre floats
+					else if(var1.valor != "" && var2.valor != "" && var1.tipo == "float" && var2.tipo == "float"){//var float + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " >= " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "float" && $3.tipo == "float"){//var float + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " >= " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "float" && $1.tipo == "float"){//num + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " >= " + var2.tmp;
+					}
+					else if($1.tipo == "float" && $3.tipo == "float"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " >= " + $3.tmp;
+					}
+					else
+					{
+						yyerror("Algo deu errado.");
+					}
+				}
+				| E TK_EQ E
+				{
+					variable var1;
+					variable var2;
+					
+					for(int i = 0; i < tabelaSimbolos.size();i++){
+						if($1.label == tabelaSimbolos[i].nome){
+							var1 = tabelaSimbolos[i];		
+						}
+						if($3.label == tabelaSimbolos[i].nome){
+							var2 = tabelaSimbolos[i];		
+						}
+					}
+					//-------------------------------------------------------- Comparação de Inteiro --------------------------------------------------------//
+					if(var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//var int + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " == " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "int" && $3.tipo == "int"){//var int + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " == " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "int" && $1.tipo == "int"){//num + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " == " + var2.tmp;
+					}
+					else if($1.tipo == "int" && $3.tipo == "int"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " == " + $3.tmp;
+					} // Comparação entre floats
+					else if(var1.valor != "" && var2.valor != "" && var1.tipo == "float" && var2.tipo == "float"){//var float + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " == " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "float" && $3.tipo == "float"){//var float + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " == " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "float" && $1.tipo == "float"){//num + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " == " + var2.tmp;
+					}
+					else if($1.tipo == "float" && $3.tipo == "float"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " == " + $3.tmp;
+					}
+					else
+					{
+						yyerror("Algo deu errado.");
+					}
+				}
+				| E TK_DIFF E
+				{
+					variable var1;
+					variable var2;
+					
+					for(int i = 0; i < tabelaSimbolos.size();i++){
+						if($1.label == tabelaSimbolos[i].nome){
+							var1 = tabelaSimbolos[i];		
+						}
+						if($3.label == tabelaSimbolos[i].nome){
+							var2 = tabelaSimbolos[i];		
+						}
+					}
+					//-------------------------------------------------------- Comparação de Inteiro --------------------------------------------------------//
+					if(var1.valor != "" && var2.valor != "" && var1.tipo == "int" && var2.tipo == "int"){//var int + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " != " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "int" && $3.tipo == "int"){//var int + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " != " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "int" && $1.tipo == "int"){//num + var int
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " != " + var2.tmp;
+					}
+					else if($1.tipo == "int" && $3.tipo == "int"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " != " + $3.tmp;
+					} // Comparação entre floats
+					else if(var1.valor != "" && var2.valor != "" && var1.tipo == "float" && var2.tipo == "float"){//var float + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " != " + var2.tmp;
+					}
+					else if(var1.valor != "" && var1.tipo == "float" && $3.tipo == "float"){//var float + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = var1.tmp + " != " + $3.tmp;
+					}
+					else if(var2.valor != "" && var2.tipo == "float" && $1.tipo == "float"){//num + var float
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " != " + var2.tmp;
+					}
+					else if($1.tipo == "float" && $3.tipo == "float"){//num + num
+						$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.tipo = "bool";
+						$$.tmp = $1.tmp + " != " + $3.tmp;
+					}
+					else
+					{
+						yyerror("Algo deu errado.");
+					}
 				}
 				| TK_ID '=' E // Atribuição de uma variável ou um valor qualquer a uma variável já declarada
 				{

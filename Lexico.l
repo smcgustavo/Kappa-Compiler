@@ -67,7 +67,7 @@ BOOL "true"|"false"
 
 [(){}[\];,]	{ return *yytext; }
 
-[+\-*/]		{ return *yytext; }
+[+\-*/&|<>]		{ return *yytext; }
 
 "="		    { return '='; }
 

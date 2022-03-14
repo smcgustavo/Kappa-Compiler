@@ -2,8 +2,13 @@ int main()
 {
     var a;
     var b = true;
-    var c = true;
+    var c = false;
+    var l = true;
     var d;
-    d = true & true;
-    a = 2 + 2.2;
+
+    d = 1.1 != 7.3;
+
+    a = 2 + 2.2 / 3;
+
+
 }
