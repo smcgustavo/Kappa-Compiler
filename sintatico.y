@@ -80,8 +80,7 @@ int erroTipo(string tipo0, string tipo1);
 
 
 //ordem de precedência
-%right '!' 
-%left TK_NOT TK_AND TK_OR
+%right '!' '=' 
 %left '|'
 %left '&'
 %left TK_EQ TK_DIFF
@@ -618,9 +617,7 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 			v2 = tabelaSimbolos[i];		
 		}
 	}
-	cout<<dolar1.tipo<<endl;	
-	cout<<dolar3.tipo<<endl;	
-	cout<<v2.tipo<<endl;	
+		
 	if(operacao == "soma"){
 	//-------------------------------------------------------- Soma de inteiro --------------------------------------------------------//
 		if(v1.valor != "" && v2.valor != "" && v1.tipo == "int" && v2.tipo == "int"){//int var + int var
