@@ -13,7 +13,7 @@ NUM {DIGITO}+
 REAL {NUM}+("."{NUM}+)?
 CHAR \'({LETRA}|{NUM})\'
 ID {LETRA}({LETRA}|{NUM})*
-BOOL "true"|"false"
+BOOL "True"|"False"
 
 %%
 
@@ -35,7 +35,6 @@ BOOL "true"|"false"
 "float"     {return TK_TIPO_FLOAT;}
 
 "bool"		{yylval.label = "bool"; yylval.traducao = yytext; return TK_TIPO_BOOL;}
-
 
 "var"       {return TK_DEC_VAR;}
 
@@ -64,10 +63,20 @@ BOOL "true"|"false"
 
 "!="        {return TK_DIFF;}
 
+"<"         {return TK_LESS;}
+
+">"         {return TK_GREATER;}
+
+"!"         {return TK_NOT;}
+
+"||"        {return TK_OR;}   
+
+"&&"        {return TK_AND;}
+
 
 [(){}[\];,]	{ return *yytext; }
 
-[+\-*/&|<>]		{ return *yytext; }
+[+\-*/]		{ return *yytext; }
 
 "="		    { return '='; }
 
