@@ -1,6 +1,4 @@
 int main()  
 {
-    var a;
-    var b = True;
-    a = 2 + 2.2;
+    var a = 2;
 }

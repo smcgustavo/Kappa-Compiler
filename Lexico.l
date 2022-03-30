@@ -63,6 +63,16 @@ BOOL "True"|"False"
 
 "!="        {return TK_DIFF;}
 
+"<"         {return TK_LESS;}
+
+">"         {return TK_GREATER;}
+
+"!"         {return TK_NOT;}
+
+"||"        {return TK_OR;}   
+
+"&&"        {return TK_AND;}
+
 
 [(){}[\];,]	{ return *yytext; }
 
