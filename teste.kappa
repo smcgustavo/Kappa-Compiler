@@ -1,14 +1,25 @@
+global var a = 3;
+global var b;
 int main()  
 {
-    var a;
-    var b = true;
-    var c = false;
-    var l = true;
-    var d;
+    b = 3.3;
+    if(a >= b){
+        var t = 'c';
+        var ad = 500;
+    }
+    for(var i = 0; i < 5; i++){
+        var aa = "JAIOUSEHSAIUEHISUAADASDASDASDASDSADASDASOESA";
+    }
+    while(50>4.5){
+        var l;
+        input(l);
+    }
+    do{
+        var teste = 'k';
+        print(teste);
+    }while(b);
 
-    d = 1.1 != 7.3;
-
-    a = 2 + 2.2 / 3;
-
-
+    var jk = "OHASIUEHAISEHAUI";
+    jk = "morreu";
+    a = 50;
 }

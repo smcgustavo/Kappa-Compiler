@@ -1,6 +1,10 @@
 %{
 #include <string>
-
+#include <iostream>
+#include <sstream>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 %}
 
 ESPACO [ \t]
@@ -14,6 +18,7 @@ REAL {NUM}+("."{NUM}+)?
 CHAR \'({LETRA}|{NUM})\'
 ID {LETRA}({LETRA}|{NUM})*
 BOOL "True"|"False"
+STRING \"({LETRA}|{NUM})*\"
 
 %%
 
@@ -26,34 +31,29 @@ BOOL "True"|"False"
 
 "main"		{return TK_MAIN;}
 
-
-
 "int"		{return TK_TIPO_INT;}
-
-"char"      {return TK_TIPO_CHAR;}
 
 "float"     {return TK_TIPO_FLOAT;}
 
-"bool"		{yylval.label = "bool"; yylval.traducao = yytext; return TK_TIPO_BOOL;}
-
 "var"       {return TK_DEC_VAR;}
 
+"global"    {return TK_GLOBAL_VAR;}
 
+"if"        {return TK_IF;}
 
+"else"      {return TK_ELSE;}
 
-"entrada"	{return TK_ENTRADA;}
+"end"       {return TK_END_LOOP;}
 
-"saida"		{return TK_SAIDA;}
+"while"     {return TK_WHILE;}
 
+"do"        {return TK_DO;}
 
+"for"		{return TK_FOR;}
 
+"input"     {return TK_INPUT;}
 
-"(f)"		{return TK_CONV_FLOAT;}
-
-"(i)"		{return TK_CONV_INT;}
-
-
-
+"print"		{return TK_SAIDA;}
 
 "<="        {return TK_LE;}
 
@@ -73,6 +73,11 @@ BOOL "True"|"False"
 
 "&&"        {return TK_AND;}
 
+"//"        {return TK_COMENTARIO;}
+
+"++"        {return TK_UN_SUM;}
+
+"--"        {return TK_UN_SUB;}
 
 [(){}[\];,]	{ return *yytext; }
 
@@ -85,6 +90,8 @@ BOOL "True"|"False"
 {CHAR}      { yylval.label = yytext; return TK_CHAR; }
 {REAL}      { yylval.label = yytext; return TK_FLOAT;}
 {ID}		{ yylval.label = yytext; return TK_ID; }
+{STRING}	{ yylval.label = yytext; return TK_STRING;}
+
 
 .			{ *yytext; }
 
