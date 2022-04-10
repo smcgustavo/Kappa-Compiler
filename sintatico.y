@@ -430,11 +430,13 @@ ENTRADA			: TK_INPUT '(' E ')'
 							string aux = genLabel();
 							$$.traducao_dec = $3.traducao_dec;
 							$$.traducao = $3.traducao + "\tinput( " + var1->nome + " );\n" + "\t" + var1->tmp + " = " + aux + ";\n";
+							$$.traducao = "\tcin >> " + var1->tmp + ";\n";
 						}
 						else{
 							string aux = genLabel();
 							$$.traducao_dec = $3.traducao_dec + "\t" + var1->tipo + " " + aux + ";\n";
 							$$.traducao = $3.traducao + "\tinput( " + var1->nome + " );\n" + "\t" + var1->tmp + " = " + aux + ";\n";
+							$$.traducao = "\tcin >> " + var1->tmp + ";\n";
 						}
 					}
 					else{
@@ -450,7 +452,7 @@ SAIDA			: TK_SAIDA '(' E ')'
 						cout<<"teste1"<<endl;
 						variable *var1 = returnVariable($3.label);
 						$$.traducao_dec = $3.traducao_dec;
-						$$.traducao = $4.traducao + "\tprint( " + var1->tmp + " );\n";
+						$$.traducao = $4.traducao + "\tcout << " + var1->tmp + " ;\n";
 					}
 					else{
 						yyerror("Você não declarou a variável " + $3.label + "\n");
@@ -2034,14 +2036,14 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 		else if(v1->valor != "" && v1->tipo == "int" && dolar3.tipo == "int"){//int var >= int num
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " >= " + dolar3.tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " >= " + dolar3.tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
 		else if(v2->valor != "" && v2->tipo == "int" && dolar1.tipo == "int"){//int num >= int var
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " >= " + v2->tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " >= " + v2->tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
@@ -2161,14 +2163,14 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 		else if(v1->valor != "" && v1->tipo == "int" && dolar3.tipo == "int"){//int var == int num
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " == " + dolar3.tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " == " + dolar3.tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
 		else if(v2->valor != "" && v2->tipo == "int" && dolar1.tipo == "int"){//int num == int var
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " == " + v2->tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " == " + v2->tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
@@ -2309,7 +2311,7 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 		else if(v2->valor != "" && v2->tipo == "int" && dolar1.tipo == "int"){//int num != int var
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " != " + v2->tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " != " + v2->tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
