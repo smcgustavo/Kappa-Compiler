@@ -31,6 +31,10 @@ STRING \"({LETRA}|{NUM})*\"
 
 "main"		{return TK_MAIN;}
 
+"break"     {return TK_BREAK;}
+
+"continue"  {return TK_CONTINUE;}
+
 "int"		{return TK_TIPO_INT;}
 
 "float"     {return TK_TIPO_FLOAT;}
@@ -63,6 +67,12 @@ STRING \"({LETRA}|{NUM})*\"
 
 "!="        {return TK_DIFF;}
 
+"switch"    {return TK_SWITCH;}
+
+"case"      {return TK_CASE;}
+
+"default"   {return TK_DEFAULT;}
+
 "<"         {return TK_LESS;}
 
 ">"         {return TK_GREATER;}
@@ -79,7 +89,7 @@ STRING \"({LETRA}|{NUM})*\"
 
 "--"        {return TK_UN_SUB;}
 
-[(){}[\];,]	{ return *yytext; }
+[(){}[\];,:]	{ return *yytext; }
 
 [+\-*/]		{ return *yytext; }
 

@@ -31,6 +31,11 @@ typedef struct Temps{
 	string tmp;
 } temps;
 
+typedef struct Execucao {
+	string Inicio;
+	string Fim;
+} Execucao;
+
 typedef struct Atributos
 {
 	string tipo;
@@ -56,6 +61,7 @@ int entryMain = 0;
 bool teste;
 variable auxiliar;
 vector<vector<variable>>globalTabSym;
+stack<Execucao> loops;
 
 
 //funções yacc
@@ -65,10 +71,11 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 bool verifyVariableLocal(string nome);
 bool verifyVariableGlobal(string nome);
 variable *returnVariable(string nome);
+Execucao criaBloco(string inicio, string fim);
 
 //função geradora de tmps
 string genLabel();
-tuple<string,string> genBlock(string);
+Execucao genBlock(string);
 
 %}
 
@@ -79,8 +86,8 @@ tuple<string,string> genBlock(string);
 %token TK_TIPO_INT TK_TIPO_FLOAT TK_COMENTARIO TK_UN_SUM TK_UN_SUB
 %token TK_LESS TK_GREATER TK_LE TK_HE TK_EQ TK_DIFF TK_NOT TK_AND TK_OR
 %token TK_CHAR TK_FLOAT TK_BOOL TK_NUM TK_STRING   
-%token TK_FIM TK_ERROR
-
+%token TK_FIM TK_ERROR TK_BREAK TK_CONTINUE
+%token TK_SWITCH TK_CASE TK_DEFAULT
 %start S
 
 
@@ -190,16 +197,18 @@ COMANDO 		: E ';'
 					if(mapAtual > 0){
 						globalTabSym.pop_back();
 						mapAtual--;
-					}	
+					}
+					loops.pop();
 					cout<<"BLOCOCONTEXTO FOR"<<endl;
 				}
 				| BLOCOCONTEXTO WHILE
-				{
+				{	
 					$$ = $2;
 					if(mapAtual > 0){
 						globalTabSym.pop_back();
 						mapAtual--;
-					}	
+					}
+					loops.pop();	
 					cout<<"BLOCOCONTEXTO WHILE"<<endl;
 				}
 				| BLOCOCONTEXTO DOWHILE ';'
@@ -209,14 +218,21 @@ COMANDO 		: E ';'
 						globalTabSym.pop_back();
 						mapAtual--;
 					}
+					loops.pop();
 					cout<<"BLOCOCONTEXTO DOWHILE"<<endl;
 				}
-				| BLOCOCONTEXTO BREAK ';'
+				| BLOCOCONTEXTO SWITCH
+                {
+                    $$ = $2;
+                }
+				| BREAK ';'
 				{
+					$$ = $1;
 					cout<<"BLOCOCONTEXTO BREAK"<<endl;
 				}
-				| BLOCOCONTEXTO CONTINUE ';'
+				|  CONTINUE ';'
 				{
+					$$ = $1;
 					cout<<"BLOCOCONTEXTO CONTINUE"<<endl;
 				}
 				;
@@ -494,48 +510,49 @@ ELSE 			: ELSEE BLOCO
 				}
 				;
 
-FOR				: TK_FOR '(' DECLARACAO ';' E ';' E ')' BLOCO
-				{
-					tuple <string, string> nomeBloco; 
-					nomeBloco = genBlock("For");
-					string inicio = get<0>(nomeBloco);
-					string fim = get<1>(nomeBloco);
+FOR				: TK_FOR {Execucao atual = genBlock("For");
+					string inicio = atual.Inicio;
+					string fim = atual.Fim;
+					loops.push(atual);}'(' DECLARACAO ';' E ';' E ')' BLOCO
+				{	
+					string inicio = loops.top().Inicio;
+					string fim = loops.top().Fim;
+					//Empilha os nomes de inicio e fim dos blocos
 					cout<<"TK_FOR()"<<endl;
 					string aux = genLabel();
-					int posChange = $5.traducao.find_first_of(";");
+					int posChange = $6.traducao.find_first_of(";");
 					posChange++;
-					$5.traducao.insert(posChange, "\n\t"+ inicio +":"); // Inicio -> Inicio bloco
-					$$.traducao_dec = $3.traducao_dec + $5.traducao_dec + $7.traducao_dec + $9.traducao_dec;
-					//$$.traducao = "\tfor( " + $3.label + " ; " + $5.tmp + " ; " + $7.label + "++ ){";
-					$$.traducao = "\n" + $3.traducao + $5.traducao + "\t" + aux + " = !( " + $5.tmp + " );\n\tif( " +
-					aux + " ) goto "+ fim +";\n" + $9.traducao + $7.traducao + "\tgoto "+ inicio +";\n\t"+fim+":\n";
+					$6.traducao.insert(posChange, "\n\t"+ inicio +":"); // Inicio -> Inicio bloco
+					$$.traducao_dec = $4.traducao_dec + $6.traducao_dec + $8.traducao_dec + $10.traducao_dec;
+					//$$.traducao = "\tfor( " + $4.label + " ; " + $6.tmp + " ; " + $8.label + "++ ){";
+					$$.traducao = "\n" + $4.traducao + $6.traducao + "\t" + aux + " = !( " + $6.tmp + " );\n\tif( " +
+					aux + " ) goto "+ fim +";\n" + $10.traducao + $8.traducao + "\tgoto "+ inicio +";\n\t"+fim+":\n";
 				}
 				; 									
 
-WHILE 			: TK_WHILE '(' E ')' BLOCO
+WHILE 			: TK_WHILE {Execucao atual = genBlock("While");
+					string inicio = atual.Inicio;
+					string fim = atual.Fim;
+					loops.push(atual);} '(' E ')' BLOCO
 				{
-					tuple <string, string> nomeBloco;
-					nomeBloco = genBlock("While");
-					string inicio = get<0>(nomeBloco);
-					string fim = get<1>(nomeBloco);
-
 					cout<<"TK_WHILE()"<<endl;
-					variable *var1 = returnVariable($3.label);
+					variable *var1 = returnVariable($4.label);
 					string aux = genLabel();
-
-					if(var1->nome == $3.label && var1->tipo != "char"){
-						$$.traducao_dec = $3.traducao_dec + $5.traducao_dec + "\tint " + aux + ";\n";
+					string inicio = loops.top().Inicio;
+					string fim = loops.top().Fim;
+					if(var1->nome == $4.label && var1->tipo != "char"){
+						$$.traducao_dec = $4.traducao_dec + $6.traducao_dec + "\tint " + aux + ";\n";
 						$$.traducao = " \t\n\t" + inicio + ":\n" + "\t\t" + aux + " = !( " + var1->tmp + " );\n\t\tif( " + aux + " ) goto "+fim+";" +       
-						$5.traducao + "\n\t\tgoto "+ inicio +";\n\t"+fim+":\n";
+						$6.traducao + "\n\t\tgoto "+ inicio +";\n\t"+fim+":\n";
 					}
-					else if($3.tipo == "bool"){
-						int posChange = $3.traducao.find_first_of(";");
-						posChange = $3.traducao.find(";",posChange + 1);
+					else if($4.tipo == "bool"){
+						int posChange = $4.traducao.find_first_of(";");
+						posChange = $4.traducao.find(";",posChange + 1);
 						posChange++;
-						$3.traducao.insert(posChange, "\n\t"+inicio+":");
-						$$.traducao_dec = $3.traducao_dec + $5.traducao_dec + + "\tint " + aux + ";\n";
-						$$.traducao = "\t" + $3.tmp + "\n" + $3.traducao  + "\t\t" + aux + " = !( " + $3.tmp + " );\n\t\tif( " + aux + " ) goto "+fim+";\n" +       
-						$5.traducao + "\t\tgoto "+inicio+";\n\t"+fim+":\n";
+						$4.traducao.insert(posChange, "\n\t"+inicio+":");
+						$$.traducao_dec = $4.traducao_dec + $6.traducao_dec + + "\tint " + aux + ";\n";
+						$$.traducao = "\t" + $4.tmp + "\n" + $4.traducao  + "\t\t" + aux + " = !( " + $4.tmp + " );\n\t\tif( " + aux + " ) goto "+fim+";\n" +       
+						$6.traducao + "\t\tgoto "+inicio+";\n\t"+fim+":\n";
 					}
 					else{
 						yyerror("Expressão de condição não permitida\n");
@@ -543,26 +560,26 @@ WHILE 			: TK_WHILE '(' E ')' BLOCO
 				}
 				;
 
-DOWHILE 		: TK_DO BLOCO TK_WHILE '(' E ')'
+DOWHILE 		: TK_DO {Execucao atual = genBlock("DoWhile");
+					string inicio = atual.Inicio;
+					string fim = atual.Fim;
+					loops.push(atual);} BLOCO TK_WHILE '(' E ')'
 				{
-					tuple <string, string> nomeBloco;
-					nomeBloco = genBlock("DoWhile");
-					string inicio = get<0>(nomeBloco);
-					string fim = get<1>(nomeBloco);
-
+					string inicio = loops.top().Inicio;
+					string fim = loops.top().Fim;
 					cout<<"TK_DO WHILE()"<<endl;
-					variable *var1 = returnVariable($5.label);
+					variable *var1 = returnVariable($6.label);
 					string aux = genLabel();
 
-					if(var1->nome == $5.label && var1->tipo != "char"){
-						$$.traducao_dec = $2.traducao_dec + $5.traducao_dec + "\tint " + aux + ";\n";
-						$$.traducao = "\n\t"+inicio+":\n" + $2.traducao + "\t\t"+ aux + " = !( " + var1->tmp + " );\n\t\tif( " + aux + " ) goto "+fim+";\n\t\tgoto "+inicio+";" +
+					if(var1->nome == $6.label && var1->tipo != "char"){
+						$$.traducao_dec = $3.traducao_dec + $6.traducao_dec + "\tint " + aux + ";\n";
+						$$.traducao = "\n\t"+inicio+":\n" + $3.traducao + "\t\t"+ aux + " = !( " + var1->tmp + " );\n\t\tif( " + aux + " ) goto "+fim+";\n\t\tgoto "+inicio+";" +
 						"\n\t"+fim+":\n\t" +"\n";
 					}
-					else if($5.tipo == "bool"){
-						$$.traducao_dec = $2.traducao_dec + $5.traducao_dec;
-						$$.traducao = "\n\t"+inicio+":\n" + $2.traducao + "\t\t"+ aux + " = !( " + $5.tmp + " );\n\t\tif( " + aux + " ) goto "+fim+";\n\t\tgoto "+inicio+";" +
-						"\n\t"+fim+":\n" + $5.traducao +"\t"+"\n";
+					else if($6.tipo == "bool"){
+						$$.traducao_dec = $3.traducao_dec + $6.traducao_dec;
+						$$.traducao = "\n\t"+inicio+":\n" + $3.traducao + "\t\t"+ aux + " = !( " + $6.tmp + " );\n\t\tif( " + aux + " ) goto "+fim+";\n\t\tgoto "+inicio+";" +
+						"\n\t"+fim+":\n" + $6.traducao +"\t"+"\n";
 					}
 					else{
 						yyerror("Expressão de condição não permitida\n");
@@ -570,13 +587,31 @@ DOWHILE 		: TK_DO BLOCO TK_WHILE '(' E ')'
 				}
 				;	
 
-BREAK			:
-				{
+SWITCH          : TK_SWITCH '(' E ')' '{' CASE '}'
+                {
+                    cout<<"entro aqui"<<endl;
+                }
+                ;
 
+CASE            : TK_CASE TK_NUM ':' TK_BREAK ';' CASE
+                {
+                    cout<<"BRAIDA"<<endl;
+                }
+                | TK_DEFAULT ':'
+                {
+                    cout<<"FINAL DO CASE"<<endl;
+                }
+                ;
+BREAK			: TK_BREAK
+				{
+					$$.traducao = "\n\tgoto " + loops.top().Fim + ";//Break\n";
 				}							
 				;
 
-CONTINUE		:
+CONTINUE		: TK_CONTINUE
+				{
+					$$.traducao = "\n\tgoto " + loops.top().Inicio + ";//Continue\n";
+				}
 				;
 
 E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declaradas ou valores quaisquer
@@ -956,11 +991,11 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 				| TK_STRING
 				{
 					cout<<"tk_string"<<endl;
-					$$.tipo = "string";
+					$$.tipo = "char *";
 					$$.tmp = genLabel();
 					
 					$$.traducao_dec = "\t" + $$.tipo + " " + $$.tmp + ";\n";
-					$$.traducao = "\t" + $$.tmp + " =  (string*) malloc(" + to_string($$.label.size())  + "* sizeof(string));\n" + "\t" + $$.tmp + " = " + $$.label + ";\n";
+					$$.traducao = "\t" + $$.tmp + " =  (char*) malloc(" + to_string($$.label.size())  + "* sizeof(char));\n" + "\t" + $$.tmp + " = " + $$.label + ";\n";
 				}
 				| TK_BOOL
 				{
@@ -1013,9 +1048,19 @@ string genLabel(){
 	return "temp" + to_string(valorVar++);
 }
 
-tuple<string, string> genBlock(string tipo){
+Execucao criaBloco(string inicio, string fim){
+	Execucao nova;
+	nova.Inicio = inicio;
+	nova.Fim = fim;
+	return nova;
+}
+
+Execucao genBlock(string tipo){
+	Execucao nova;
 	string numero = to_string(valorBlock++);
-	return 	{"Inicio"+ tipo + numero , "Fim"+ tipo + numero};
+	nova.Inicio = "Inicio"+ tipo + numero;
+	nova.Fim = "Fim"+ tipo + numero;
+	return nova;
 }
 
 bool verifyVariableGlobal(string nome){
