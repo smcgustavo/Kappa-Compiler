@@ -593,13 +593,29 @@ SWITCH          : TK_SWITCH '(' E ')' '{' CASE '}'
                 }
                 ;
 
-CASE            : TK_CASE TK_NUM ':' TK_BREAK ';' CASE
+CASE            : TK_CASE TK_NUM ':' E ';' TK_BREAK ';' CASE
                 {
-                    cout<<"BRAIDA"<<endl;
                 }
-                | TK_DEFAULT ':'
+                | TK_CASE TK_NUM ':' DECLARACAO ';' TK_BREAK ';' CASE
                 {
-                    cout<<"FINAL DO CASE"<<endl;
+                }
+                | TK_CASE TK_NUM ':' ENTRADA ';' TK_BREAK ';' CASE
+                {
+                }
+                | TK_CASE TK_NUM ':' SAIDA ';' TK_BREAK ';' CASE
+                {
+                }
+                | TK_DEFAULT ':' E ';'
+                {
+                }
+                | TK_DEFAULT ':' DECLARACAO ';'
+                {
+                }
+                | TK_DEFAULT ':' ENTRADA ';'
+                {
+                }
+                | TK_DEFAULT ':' SAIDA ';'
+                {
                 }
                 ;
 BREAK			: TK_BREAK
