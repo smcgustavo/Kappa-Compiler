@@ -8,6 +8,7 @@
 #include <list>
 #include <stdlib.h>
 #include <string.h>
+#include <tuple>
 
 using std::string;
 using std::getline;
@@ -17,30 +18,41 @@ using std::getline;
 using namespace std;
 
 typedef struct Variable{
-
+	vector<string> variaveis;
 	string tipo;
 	string nome;
 	string valor;
 	string tmp;
+	string tmVetor;
 } variable;
 
 typedef struct Temps{
-
 	string valor;
 	string tmp;
 } temps;
 
-typedef struct Atributos
-{
+typedef struct Execucao {
+	string Inicio;
+	string Fim;
+} Execucao;
+
+typedef struct Atributos{
 	string tipo;
 	string label;
 	string traducao_dec;
 	string traducao;
 	string tmp;
+	string operacao;
 } atributos;
 
-typedef struct{
+typedef struct Function{
+	atributos bloco;
+	string argumentos;
+	string nome;
+	string retorno;
+} Function;
 
+typedef struct{
 	string implicita; //tradução após conversão
 	string nomeVar; //nome da variável
 	string varConvertida; //nome da variável que foi convertida
@@ -48,12 +60,19 @@ typedef struct{
 
 //variaveis
 int valorVar = 1;
+int valorBlock = 0;
 int mapAtual = 0;
 //int var_temp_qnt;
 int entryMain = 0;
+int entryFunc = 0;
+int contTamVetor = 0;
 bool teste;
 variable auxiliar;
 vector<vector<variable>>globalTabSym;
+vector<string> auxArray;
+stack<Execucao> loops;
+vector<Function> funcoes;
+Function funcaoAux;
 
 
 //funções yacc
@@ -62,22 +81,26 @@ void yyerror(string);
 void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, string operacao);
 bool verifyVariableLocal(string nome);
 bool verifyVariableGlobal(string nome);
+bool verifyFunction(string nome);
 variable *returnVariable(string nome);
+Function *returnFunction(string nome);
+Execucao criaBloco(string inicio, string fim);
 
 //função geradora de tmps
 string genLabel();
+Execucao genBlock(string);
 
 %}
 
 //tokens
 %token TK_MAIN
 %token TK_INPUT TK_SAIDA TK_WHILE TK_DO TK_FOR TK_IF TK_ELSE TK_END_LOOP
-%token TK_ID TK_DEC_VAR TK_GLOBAL_VAR
-%token TK_TIPO_INT TK_TIPO_FLOAT TK_COMENTARIO TK_UN_SUM TK_UN_SUB
+%token TK_ID TK_DEC_VAR TK_GLOBAL_VAR TK_TIPO_VOID TK_TIPO_CHAR
+%token TK_TIPO_INT TK_TIPO_FLOAT TK_COMENTARIO TK_UN_SUM TK_UN_SUB 
 %token TK_LESS TK_GREATER TK_LE TK_HE TK_EQ TK_DIFF TK_NOT TK_AND TK_OR
 %token TK_CHAR TK_FLOAT TK_BOOL TK_NUM TK_STRING   
-%token TK_FIM TK_ERROR
-
+%token TK_FIM TK_ERROR TK_BREAK TK_CONTINUE
+%token TK_SWITCH TK_CASE TK_DEFAULT
 %start S
 
 
@@ -93,9 +116,9 @@ string genLabel();
 
 
 %%
-S 				:BLOCOGLOBAL BLOCOCONTEXTO TK_TIPO_INT{cout<<"Entro na main"<<endl;entryMain++;} TK_MAIN '(' ')' BLOCO
+S 				:/*FUNCOES*/ BLOCOGLOBAL BLOCOCONTEXTO TK_TIPO_INT{cout<<"Entro na main"<<endl;entryMain++;} TK_MAIN '(' ')' BLOCO 
 				{
-					cout << "/*Salve Kappa!*/\n" << "#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void)\n{\n" << 
+					cout << "/*Salve Kappa!*/\n" << "\n#include <iostream>\n#include<string.h>\n#include<stdio.h>\nusing std::string;\nint main(void)\n{\n" << 
 					"//------------------ Escopo Variáveis ------------------\\\\ \n" << $1.traducao_dec <<$8.traducao_dec << 
 					"//------------------ Escopo Atribuições ------------------\\\\ \n" << $1.traducao << $8.traducao << "\treturn 0;\n}" << endl;
 				}
@@ -107,6 +130,18 @@ BLOCOGLOBAL		: COMANDOS
 					$$.traducao_dec = $1.traducao_dec;
 				}
 				;
+
+/*FUNCOES			:
+				{
+
+				}
+				| FUNCAO
+				{
+					cout<<"funcao caralo"<<endl;
+					entryFunc = 0;
+					
+				}
+				;*/
 
 BLOCOCONTEXTO   : 
 				{
@@ -120,20 +155,34 @@ BLOCOCONTEXTO   :
 						aux.push_back(ref);
 						globalTabSym.push_back(aux);
 						mapAtual++;
+						//cout<<"Entro aqui"<<endl;
+						//cout<<"GLOBAL TAB SMY = "<<globalTabSym.size() <<endl;
 					}
+					/*if(globalTabSym.empty() == 1 && entryMain == 1){
+						variable ref;
+						ref.tipo = "";
+						ref.nome = "";
+						ref.valor = "";
+						ref.tmp = "";
+						vector<variable> aux;
+						aux.push_back(ref);
+						globalTabSym.push_back(aux);
+						mapAtual++;
+					}*/
 					cout<<"blococontexto"<<endl;
-					//cout<<"MAPA ATUAL = "<< mapAtual<<endl;
-					//cout<<"GLOBAL TAB SMY = "<<globalTabSym.size() <<endl;
+					//cout<<entryMain<<endl;
+					cout<<"MAPA ATUAL = "<< mapAtual<<endl;
+					cout<<"GLOBAL TAB SMY = "<<globalTabSym.size() <<endl;
 				}
 
 BLOCO			: '{' COMANDOS '}'
 				{
 					$$.traducao = $2.traducao;
 					$$.traducao_dec = $2.traducao_dec;
-				}
+				}	
 				;
 
-COMANDOS		: COMANDO COMANDOS
+COMANDOS		: COMANDO /*CHAMADAFUNCAO*/ COMANDOS 
 				{
 					$$.traducao = $1.traducao + $2.traducao;
 					$$.traducao_dec = $1.traducao_dec + $2.traducao_dec;
@@ -161,10 +210,6 @@ COMANDO 		: E ';'
 				{
 					$$ = $1;
 				}
-				//| COMENTARIO
-				//{
-
-				//}
 				| BLOCOCONTEXTO IF
 				{
 					$$ = $2;
@@ -173,13 +218,21 @@ COMANDO 		: E ';'
 						mapAtual--;
 					}
 					cout<<"BLOCOCONTEXTO IF"<<endl;
+					//cout<<"mapa atual" <<mapAtual<<endl;
 					//cout<<"MAPA ATUAL = "<< mapAtual<<endl;
 					//cout<<"GLOBAL TAB SMY = "<<globalTabSym.size() <<endl;
+					loops.pop();
 				}
 				| BLOCOCONTEXTO ELSE
 				{
 					$$ = $2;
+					if(mapAtual > 0){
+						globalTabSym.pop_back();
+						mapAtual--;
+					}
 					cout<<"BLOCOCONTEXTO ELSE"<<endl;
+					//cout<<"mapa atual" <<mapAtual<<endl;
+					//loops.pop();
 				}
 				| BLOCOCONTEXTO FOR
 				{	
@@ -187,16 +240,18 @@ COMANDO 		: E ';'
 					if(mapAtual > 0){
 						globalTabSym.pop_back();
 						mapAtual--;
-					}	
+					}
+					loops.pop();
 					cout<<"BLOCOCONTEXTO FOR"<<endl;
 				}
 				| BLOCOCONTEXTO WHILE
-				{
+				{	
 					$$ = $2;
 					if(mapAtual > 0){
 						globalTabSym.pop_back();
 						mapAtual--;
-					}	
+					}
+					loops.pop();	
 					cout<<"BLOCOCONTEXTO WHILE"<<endl;
 				}
 				| BLOCOCONTEXTO DOWHILE ';'
@@ -206,23 +261,26 @@ COMANDO 		: E ';'
 						globalTabSym.pop_back();
 						mapAtual--;
 					}
+					loops.pop();
 					cout<<"BLOCOCONTEXTO DOWHILE"<<endl;
 				}
-				| BLOCOCONTEXTO BREAK ';'
+				| BLOCOCONTEXTO SWITCH
+                {
+                    $$ = $2;
+					cout<<"BLOCOCONTEXTO SWITCH"<<endl;
+                }
+				| BREAK ';'
 				{
-					cout<<"BLOCOCONTEXTO BREAK"<<endl;
+					$$ = $1;
+					cout<<"BREAK"<<endl;
 				}
-				| BLOCOCONTEXTO CONTINUE ';'
+				| CONTINUE ';'
 				{
-					cout<<"BLOCOCONTEXTO CONTINUE"<<endl;
+					$$ = $1;
+					cout<<"CONTINUE"<<endl;
 				}
 				;
 
-/*COMENTARIO		: TK_COMENTARIO
-				{
-
-				}
-				;*/
 
 DECLARACAO 	    : TK_DEC_VAR TK_ID//Declaração de uma variável do tipo int sem atribuição
 				{
@@ -254,7 +312,7 @@ DECLARACAO 	    : TK_DEC_VAR TK_ID//Declaração de uma variável do tipo int se
 				| TK_DEC_VAR TK_ID '=' E //Declaração de uma variável do tipo int com atribuição. Podendo esta ser de uma outra variável ou de um valor qualquer.
 				{
 					cout<<"tk_dec_var tk_id = e"<<endl;
-					if(mapAtual == 0 && entryMain == 0){//Verifica se essa declaração está sendo feita antes da main
+					if(mapAtual == 0 && entryMain == 0 && entryFunc == 0){//Verifica se essa declaração está sendo feita antes da main
 						yyerror("Só é permitido declarar variável global antes do escopo da main com o modificador \"global\".\n");
 					}	
 					if(verifyVariableLocal($2.label) == false){//Com isso, eu sei que teve declaração antes da main. Dessa forma preciso verificar com o verifyVariableGlobal
@@ -267,10 +325,10 @@ DECLARACAO 	    : TK_DEC_VAR TK_ID//Declaração de uma variável do tipo int se
 								ref.nome = $2.label;
 								ref.valor = var1->valor;
 								ref.tmp = genLabel();
-								if(var1->tipo == "string"){
+								if(var1->tipo == "char *"){
 									$$.traducao_dec = $4.traducao_dec + "\t" + ref.tipo + " " + ref.tmp + ";\n";
-									$$.traducao = $4.traducao + "\t" + ref.tmp + " =  (string*) malloc(" + to_string(var1->valor.size())  + "* sizeof(string));\n" + "\t" + 
-									ref.tmp + " = " + var1->tmp + ";\n";
+									$$.traducao = $4.traducao + "\t" + ref.tmp + " =  (char*) malloc(" + to_string(var1->valor.size()-2)  + "* sizeof(char));\n" + "\tstrcpy( " + 
+									ref.tmp + "," + var1->tmp + " );\n";
 								}
 								else{
 									$$.traducao_dec = $4.traducao_dec + "\t" + ref.tipo + " " + ref.tmp + ";\n";
@@ -304,11 +362,12 @@ DECLARACAO 	    : TK_DEC_VAR TK_ID//Declaração de uma variável do tipo int se
 							else{
 								globalTabSym[mapAtual].push_back(ref);
 							}
-							if($4.tipo == "string"){
+							//cout<<"salvando no indice "<< mapAtual<<endl;
+							if($4.tipo == "char *"){
 								$$.traducao_dec = $4.traducao_dec + "\t" + ref.tipo + " " + ref.tmp + ";\n";
-								$$.traducao = $4.traducao + "\t" + ref.tmp + " = " + $4.tmp + ";\n";
-								$$.traducao = $4.traducao + "\t" + ref.tmp + " =  (string*) malloc(" + to_string($4.label.size())  + "* sizeof(string));\n" + "\t" + 
-								ref.tmp + " = " + $4.tmp + ";\n";	
+								//$$.traducao = $4.traducao + "\t" + ref.tmp + " = " + $4.tmp + ";\n";
+								$$.traducao = $4.traducao + "\t" + ref.tmp + " =  (char*) malloc(" + to_string($4.label.size()-2)  + "* sizeof(char));\n" + "\tstrcpy( " + 
+								ref.tmp + "," + $4.tmp + " );\n";	
 							}
 							else{
 								$$.traducao_dec = $4.traducao_dec + "\t" + ref.tipo + " " + ref.tmp + ";\n";
@@ -319,6 +378,71 @@ DECLARACAO 	    : TK_DEC_VAR TK_ID//Declaração de uma variável do tipo int se
 					else{
 						yyerror("Você já declarou a variável " + $2.label + ".\n");
 					}
+					//cout<<mapAtual<<endl;
+				}
+				| TK_DEC_VAR TK_ID '=' '[' ']'//Declaração de um vetor sem inicialização
+				{	
+					cout<<"tk_dec_var tk_id = [ ]"<<endl;
+					if(mapAtual == 0 && entryMain == 0){//Verifica se essa declaração está sendo feita antes da main
+						yyerror("Só é permitido declarar variável global antes do escopo da main com o modificador \"global\".\n");
+					}
+					if(verifyVariableLocal($2.label) != true){//Com isso, eu sei que teve declaração antes da main. Dessa forma preciso verificar com o verifyVariableGlobal
+						cout<<"teste1"<<endl;//Se a variável não foi declarada antes ja
+						variable ref;
+						ref.tipo = "";
+						ref.nome = $2.label;
+						ref.valor = ""; //Forço a variável a receber uma string vazia pois irei fazer comparações utilizando a string "vazia"
+						ref.tmp = genLabel();
+							
+						if(globalTabSym.empty() == 1 || globalTabSym.empty() == 0 && globalTabSym.size() == mapAtual ){
+							vector<variable> aux;
+							aux.push_back(ref);
+							globalTabSym.push_back(aux);
+						}
+						else{
+							globalTabSym[mapAtual].push_back(ref);
+						}
+						//$$.traducao = $2.traducao;
+					}else{
+						yyerror("Voce já declarou a variável " + $2.label + ".\n");
+					}
+				}
+				| TK_DEC_VAR TK_ID '=' '[' VETOR ']' //Declaração de um vetor com inicialização
+				{
+					cout<<"tk_dec_var tk_id = e"<<endl;
+					if(mapAtual == 0 && entryMain == 0){//Verifica se essa declaração está sendo feita antes da main
+						yyerror("Só é permitido declarar variável global antes do escopo da main com o modificador \"global\".\n");
+					}	
+					/*cout<<$5.tipo<<endl;
+					variable ref;
+					ref.variaveis = auxArray;
+					for(int i =0; i < ref.variaveis.size();i++){
+						cout<<ref.variaveis[i]<<endl;
+					}
+					if(verifyVariableLocal($2.label) == false){//Com isso, eu sei que teve declaração antes da main. Dessa forma preciso verificar com o verifyVariableGlobal
+						variable ref;
+						ref.tipo = $5.tipo;
+						ref.nome = $2.label;
+						ref.valor = ""; 
+						ref.tmp = genLabel();
+						ref.variaveis = auxArray;	
+						if(globalTabSym.empty() == 1 || globalTabSym.empty() == 0 && globalTabSym.size() == mapAtual ){//o tamanho da estrutura tem que ser maior que o tamanho do map
+							vector<variable> aux;//pois se for igual, globalTabSym[mapAtual] não vai ter nenhum elemento, com isso tenho que adicionar um elemento(vetor nesse caso)
+							aux.push_back(ref);//pra depois poder adicionar somente as variables
+							globalTabSym.push_back(aux);
+						}
+						else{
+							globalTabSym[mapAtual].push_back(ref);
+						}
+						
+						$$.traducao_dec = $4.traducao_dec + "\t" + ref.tipo + " " + ref.tmp + ";\n";
+						$$.traducao = $4.traducao + "\t" + ref.tmp + " =  (char*) malloc(" + to_string($4.label.size()-2)  + "* sizeof(char));\n" + "\tstrcpy( " + 
+						ref.tmp + "," + $4.tmp + " );\n";	
+						
+					}
+					else{
+						yyerror("Você já declarou a variável " + $2.label + ".\n");
+					}*/
 				}
 				| TK_GLOBAL_VAR TK_DEC_VAR TK_ID
 				{
@@ -361,10 +485,10 @@ DECLARACAO 	    : TK_DEC_VAR TK_ID//Declaração de uma variável do tipo int se
 								ref.nome = $3.label;
 								ref.valor = var1->valor;
 								ref.tmp = genLabel();
-								if(var1->tipo == "string"){
+								if(var1->tipo == "char *"){
 									$$.traducao_dec = $5.traducao_dec + "\t" + ref.tipo + " " + ref.tmp + ";\n";
-									$$.traducao = $5.traducao + "\t" + ref.tmp + " =  (string*) malloc(" + to_string(var1->valor.size())  + "* sizeof(string));\n" + "\t" + 
-									ref.tmp + " = " + var1->tmp + ";\n";
+									$$.traducao = $5.traducao + "\t" + ref.tmp + " =  (char*) malloc(" + to_string(var1->valor.size()-2)  + "* sizeof(char));\n" + "\tstrcpy( " + 
+									ref.tmp + "," + var1->tmp + " );\n";
 								}
 								else{
 									$$.traducao_dec = $5.traducao_dec + "\t" + ref.tipo + " " + ref.tmp + ";\n";
@@ -398,11 +522,11 @@ DECLARACAO 	    : TK_DEC_VAR TK_ID//Declaração de uma variável do tipo int se
 							else{
 								globalTabSym[mapAtual].push_back(ref);
 							}
-							if($4.tipo == "string"){
+							if($4.tipo == "char *"){
 								$$.traducao_dec = $5.traducao_dec + "\t" + ref.tipo + " " + ref.tmp + ";\n";
-								$$.traducao = $5.traducao + "\t" + ref.tmp + " = " + $5.tmp + ";\n";
-								$$.traducao = $5.traducao + "\t" + ref.tmp + " =  (string*) malloc(" + to_string($5.label.size())  + "* sizeof(string));\n" + "\t" + 
-								ref.tmp + " = " + $5.tmp + ";\n";	
+								//$$.traducao = $5.traducao + "\t" + ref.tmp + " = " + $5.tmp + ";\n";
+								$$.traducao = $5.traducao + "\t" + ref.tmp + " =  (char*) malloc(" + to_string($5.label.size()-2)  + "* sizeof(char));\n" + "\tstrcpy( " + 
+								ref.tmp + "," + $5.tmp + " );\n";	
 							}
 							else{
 								$$.traducao_dec = $5.traducao_dec + "\t" + ref.tipo + " " + ref.tmp + ";\n";
@@ -416,6 +540,169 @@ DECLARACAO 	    : TK_DEC_VAR TK_ID//Declaração de uma variável do tipo int se
 				}
 				;
 
+VETOR 			: E ',' VETOR 
+				{
+					if($1.tipo != $3.tipo){
+						yyerror("Atribuição do tipo " + $3.tipo + " ao vetor de tipo " + $1.tipo + ".\n");
+					}
+					else if($3.operacao != ""){
+						yyerror("Operações lógicas ou aritméticas não permitadas na inicialização do vetor.");
+					}
+					else{
+						$$.traducao = $1.traducao + $3.traducao;
+						auxArray.insert(auxArray.begin(),$1.label);
+					}
+				}
+				| E
+				{	
+					if($1.operacao == ""){
+						$$ = $1;
+						auxArray.insert(auxArray.begin(),$1.label);
+					}else{
+						yyerror("Operações lógicas ou aritméticas não permitadas na inicialização do vetor.");
+					}
+				}
+				;
+
+/*CHAMADAFUNCAO	: 
+				{
+
+				}
+				| NOMECHAMADA '(' ARGS ')' ';'
+				{
+					cout<<"CHAMADA FUNCAO "<<endl;
+					cout<<"ARGS "<<$3.tipo<<endl;
+					cout<<"nome chamada "<<$1.label<<endl;
+					
+					if(verifyFunction($1.label)){
+						Function *aux = returnFunction($1.label);
+						if(aux->argumentos == $3.tipo){
+							$$.traducao_dec = aux->bloco.traducao_dec;
+							$$.traducao = aux->bloco.traducao;
+						}
+						else{
+							yyerror("Argumentos passados diferentes dos tipos de argumentos declarados na função");
+						}
+					}
+					else{
+						yyerror("Função não declarada.");
+					}
+				}
+				;
+
+NOMECHAMADA		: TK_ID
+				{
+					$$ = $1;
+				}
+				;
+
+ARGS			: 
+				{
+
+				}
+				| MOREARGS
+				{
+					$$ = $1;
+				}	
+				;
+
+MOREARGS	    : E ',' MOREARGS
+				{
+					$$.traducao_dec = $1.traducao_dec + $3.traducao_dec;
+					$$.traducao = $1.traducao + $3.traducao;
+					$$.tipo = $1.tipo + " " + $3.tipo; 
+				}
+				| FIMARGS
+				{
+					$$ = $1;
+				}
+				;
+
+FIMARGS			: E 
+				{
+					$$ = $1;
+				}
+				;	
+//---------------------------------------------------------------------------------------------------------------------------------------------------//
+FUNCAO			: TIPORETORNO{entryFunc = 1;} NOME '(' ARGUMENTOS ')' BLOCO
+				{
+					cout<<"TIPO RETORNO "<<$1.label<<endl;
+					cout<<"NOME "<<$3.label<<endl;
+					cout<<"argumentos "<<$5.label<<endl;
+					Function func;
+					func.retorno = $1.label;
+					func.nome = $3.label;
+					func.argumentos = $5.label;
+					func.bloco.traducao_dec = $7.traducao_dec;
+					func.bloco.traducao = $7.traducao;;
+					funcoes.push_back(func);
+				}
+				;		
+
+TIPORETORNO		: TK_TIPO_INT
+				{
+					$$.label = "int";
+				}
+				| TK_TIPO_FLOAT
+				{
+					$$.label = "float";
+				}
+				| TK_TIPO_VOID
+				{
+					$$.label = "void";
+				}
+				| TK_TIPO_CHAR
+				{
+					$$.label = "char";
+				}
+				;
+
+NOME			: TK_ID
+				{
+					$$ = $1;
+				}
+				;
+
+ARGUMENTOS		: 
+				{
+
+				}
+				| MOREARGUMENTS
+				{
+					$$ = $1;
+				}	
+				;
+
+MOREARGUMENTS	: TIPOARGUMENTO TK_ID ',' MOREARGUMENTS
+				{
+					$$.label = $1.label + " " + $4.label;
+				}
+				| FIMARGUMENTS
+				{
+					$$ = $1;
+				}
+				;
+
+FIMARGUMENTS	: TIPOARGUMENTO TK_ID
+				{
+					$$.label = $1.label;
+				}	
+				;
+
+TIPOARGUMENTO	: TK_TIPO_INT
+				{
+					$$.label = "int";
+				}
+				| TK_TIPO_FLOAT
+				{
+					$$.label = "float";
+				}
+				| TK_TIPO_CHAR
+				{
+					$$.label = "char";	
+				}
+				;*/				
+
 ENTRADA			: TK_INPUT '(' E ')'
 				{	
 					cout<<"tk_input ( E )"<<endl;
@@ -427,11 +714,13 @@ ENTRADA			: TK_INPUT '(' E ')'
 							string aux = genLabel();
 							$$.traducao_dec = $3.traducao_dec;
 							$$.traducao = $3.traducao + "\tinput( " + var1->nome + " );\n" + "\t" + var1->tmp + " = " + aux + ";\n";
+							$$.traducao = "\tcin >> " + var1->tmp + ";\n";
 						}
 						else{
 							string aux = genLabel();
 							$$.traducao_dec = $3.traducao_dec + "\t" + var1->tipo + " " + aux + ";\n";
 							$$.traducao = $3.traducao + "\tinput( " + var1->nome + " );\n" + "\t" + var1->tmp + " = " + aux + ";\n";
+							$$.traducao = "\tcin >> " + var1->tmp + ";\n";
 						}
 					}
 					else{
@@ -447,7 +736,7 @@ SAIDA			: TK_SAIDA '(' E ')'
 						cout<<"teste1"<<endl;
 						variable *var1 = returnVariable($3.label);
 						$$.traducao_dec = $3.traducao_dec;
-						$$.traducao = $4.traducao + "\tprint( " + var1->tmp + " );\n";
+						$$.traducao = $4.traducao + "\tcout << " + var1->tmp + " ;\n";
 					}
 					else{
 						yyerror("Você não declarou a variável " + $3.label + "\n");
@@ -455,18 +744,21 @@ SAIDA			: TK_SAIDA '(' E ')'
 				}
 				;
 
-IF			    : TK_IF '(' E ')' BLOCO 
+IF			    : TK_IF {Execucao atual = genBlock("If");
+					loops.push(atual);}'(' E ')' BLOCO 
 				{
 					cout<<"TK_IF"<<endl;
-					variable *var1 = returnVariable($3.label);
+					variable *var1 = returnVariable($4.label);
 					string aux = genLabel();
-					if($3.tipo == "bool"){
-						$$.traducao_dec = $3.traducao_dec + $5.traducao_dec + "\tint " + aux + ";\n";
-						$$.traducao = $3.traducao + "\t" + aux + " = " + $3.tmp + "\n\tif ( !" + aux + ") goto FIM;\n\t{\n" + $5.traducao + "\t}\n\tFIM:\n";
+					if($4.tipo == "bool"){
+						$$.traducao_dec = $4.traducao_dec + $6.traducao_dec + "\tint " + aux + ";\n";
+						$$.traducao = $4.traducao + "\t" + aux + " = " + $4.tmp + ";\n\tif ( !" + aux + ") goto " + loops.top().Fim + ";\n\t{\n" + $6.traducao + "\t}\n\t" + 
+						loops.top().Fim + ":\n";
 					}
-					else if(var1->nome == $3.label && var1->tipo != "char"){
-						$$.traducao_dec = $3.traducao_dec + $5.traducao_dec + "\tint " + aux + ";\n";
-						$$.traducao = $3.traducao + "\t" + aux + " = " + var1->tmp + "\n\tif ( !" + aux + ") goto FIM;\n\t{\n" + $5.traducao + "\t}\n\tFIM:\n";
+					else if(var1->nome == $4.label && var1->tipo != "char"){
+						$$.traducao_dec = $4.traducao_dec + $6.traducao_dec + "\tint " + aux + ";\n";
+						$$.traducao = $4.traducao + "\t" + aux + " = " + var1->tmp + ";\n\tif ( !" + aux + ") goto " + loops.top().Fim + ";\n\t{\n" + $6.traducao + "\t}\n\t" +
+						loops.top().Fim + ":\n";
 					}
 					else{
 						yyerror("Somente expressões booleanas são validas dentro da condicional");
@@ -474,53 +766,91 @@ IF			    : TK_IF '(' E ')' BLOCO
 				}
 				;
 
-ELSEE		  	: IF TK_ELSE 
+ELSE 			: IF ELSEE
 				{
+					$$.traducao = $1.traducao + $2.traducao;
 				}
 				;
 
-ELSE 			: ELSEE BLOCO
+ELSEE			: TK_ELSE{if(mapAtual > 0){
+								globalTabSym.pop_back();
+							 }} TK_IF '(' E ')' BLOCO ELSEE
 				{
-					
+					valorBlock--;
+					Execucao atual = genBlock("Else");
+					variable *var1 = returnVariable($5.label);
+					string aux = genLabel();
+					if($5.tipo == "bool"){
+						$$.traducao_dec = $5.traducao_dec + $7.traducao_dec + "\tint " + aux + ";\n" + $8.traducao_dec;
+						$$.traducao = $5.traducao + "\t" + aux + " = " + $5.tmp + ";\n\tif ( !" + aux + ") goto " + atual.Fim + ";\n\t{\n" + $7.traducao + "\t}\n\t" + 
+						atual.Fim + ":\n" + $8.traducao;
+					}
+					else if(var1->nome == $5.label && var1->tipo != "char"){
+						$$.traducao_dec = $5.traducao_dec + $7.traducao_dec + "\tint " + aux + ";\n" + $8.traducao_dec;
+						$$.traducao = $5.traducao + "\t" + aux + " = " + var1->tmp + ";\n\tif ( !" + aux + ") goto " + atual.Fim + ";\n\t{\n" + $7.traducao + "\t}\n\t" + 
+						atual.Fim + ":\n" + $8.traducao;
+					}
+					else{
+						yyerror("Somente expressões booleanas são validas dentro da condicional");
+					}
 				}
-				| ELSEE TK_IF '(' E ')' BLOCO
+				| TK_ELSE{if(mapAtual > 0){
+								globalTabSym.pop_back();
+							 }} BLOCO
 				{
-				
+					valorBlock--;
+					Execucao atual = genBlock("Else");
+					cout<<"Else"<<endl;
+					$$.traducao_dec = $3.traducao_dec;
+					$$.traducao = "\t" + atual.Inicio + ":\n\t{\n"+ $3.traducao + "\t}\n\t" + atual.Fim + ":\n";
 				}
 				;
 
-FOR				: TK_FOR '(' DECLARACAO ';' E ';' E ')' BLOCO
-				{
+FOR				: TK_FOR {Execucao atual = genBlock("For");
+					loops.push(atual);}'(' DECLARACAO ';' E ';' E ')' BLOCO
+				{	
+					string inicio = loops.top().Inicio;
+					string fim = loops.top().Fim;
+					//Empilha os nomes de inicio e fim dos blocos
 					cout<<"TK_FOR()"<<endl;
 					string aux = genLabel();
-					int posChange = $5.traducao.find_first_of(";");
+
+					if($6.tipo != "bool"){
+						yyerror("Condição de verificação precisa ser booleana.");
+					}
+
+					int posChange = $6.traducao.find_first_of(";");
 					posChange++;
-					$5.traducao.insert(posChange, "\n\tINICIO_FOR:");
-					$$.traducao_dec = $3.traducao_dec + $5.traducao_dec + $7.traducao_dec + $9.traducao_dec;
-					$$.traducao = "\tfor( " + $3.label + " ; " + $5.tmp + " ; " + $7.label + "++ ){\n" + $3.traducao + $5.traducao + "\t" + aux + " = !( " + $5.tmp + " );\n\tif( " +
-					aux + " ) goto FIM_FOR;\n" + $9.traducao + $7.traducao + "\tgoto INICIO_FOR;\n\tFIM_FOR:\n";
+					$6.traducao.insert(posChange, "\n"+ inicio+":" ); // Inicio -> Inicio bloco
+					$$.traducao_dec = $4.traducao_dec + $6.traducao_dec + $8.traducao_dec + $10.traducao_dec;
+					//$$.traducao = "\tfor( " + $4.label + " ; " + $6.tmp + " ; " + $8.label + "++ ){";
+					$$.traducao = "\n" + $4.traducao + $6.traducao + "\t" + aux + " = !( " + $6.tmp + " );\n\tif( " +
+					aux + " ) goto "+ fim +";\n\t{\n" + $10.traducao + "\t}\n" + $8.traducao + "\tgoto "+ inicio +";\n"+fim+":\n";
 				}
 				; 									
 
-WHILE 			: TK_WHILE '(' E ')' BLOCO
+WHILE 			: TK_WHILE {Execucao atual = genBlock("While");
+					loops.push(atual);} '(' E ')' BLOCO
 				{
 					cout<<"TK_WHILE()"<<endl;
-					variable *var1 = returnVariable($3.label);
+					variable *var1 = returnVariable($4.label);
 					string aux = genLabel();
-
-					if(var1->nome == $3.label && var1->tipo != "char"){
-						$$.traducao_dec = $3.traducao_dec + $5.traducao_dec + "\tint " + aux + ";\n";
-						$$.traducao = "\twhile( " + var1->nome + " ){\n" + "\tINICIO_WHILE:\n" + "\t\t" + aux + " = !( " + var1->tmp + " );\n\t\tif( " + aux + " ) goto FIM_WHILE;" +       
-						$5.traducao + "\n\t\tgoto INICIO_WHILE;\n\tFIM_WHILE:\n";
+					string inicio = loops.top().Inicio;
+					string fim = loops.top().Fim;
+					if(var1->nome == $4.label && var1->tipo != "char"){
+						$$.traducao_dec = $4.traducao_dec + $6.traducao_dec + "\tint " + aux + ";\n";
+						$$.traducao = "\n" + inicio + ":\n" + "\t" + aux + " = !( " + var1->tmp + " );\n\tif( " + aux + " ) goto "+fim+";\n\t{\n" +       
+						$6.traducao + "\t}\n\tgoto "+ inicio +";\n"+fim+":\n";
 					}
-					else if($3.tipo == "bool"){
-						int posChange = $3.traducao.find_first_of(";");
-						posChange = $3.traducao.find(";",posChange + 1);
+					else if($4.tipo == "bool"){
+						int posChange = $4.traducao.find_first_of(";");
+						posChange = $4.traducao.find(";",posChange + 1);
 						posChange++;
-						$3.traducao.insert(posChange, "\n\tINICIO_WHILE:");
-						$$.traducao_dec = $3.traducao_dec + $5.traducao_dec + + "\tint " + aux + ";\n";
-						$$.traducao = "\twhile( " + $3.tmp + " ){\n" + $3.traducao  + "\t\t" + aux + " = !( " + $3.tmp + " );\n\t\tif( " + aux + " ) goto FIM_WHILE;\n" +       
-						$5.traducao + "\t\tgoto INICIO_WHILE;\n\tFIM_WHILE:\n";
+						//cout<<"temp 4"<<$4.tmp<<endl;
+						$4.traducao.insert(posChange, "\n"+inicio+":");
+						$$.traducao_dec = $4.traducao_dec + $6.traducao_dec + + "\tint " + aux + ";\n";
+						$$.traducao = "\n" + $4.traducao  + "\t" + aux + " = !( " + $4.tmp + " );\n\tif( " + aux + " ) goto "+fim+";\n\t{\n" +       
+						$6.traducao + "\t}\n\tgoto "+inicio+";\n"+fim+":\n";
 					}
 					else{
 						yyerror("Expressão de condição não permitida\n");
@@ -528,21 +858,24 @@ WHILE 			: TK_WHILE '(' E ')' BLOCO
 				}
 				;
 
-DOWHILE 		: TK_DO BLOCO TK_WHILE '(' E ')'
+DOWHILE 		: TK_DO {Execucao atual = genBlock("DoWhile");
+					loops.push(atual);} BLOCO TK_WHILE '(' E ')'
 				{
+					string inicio = loops.top().Inicio;
+					string fim = loops.top().Fim;
 					cout<<"TK_DO WHILE()"<<endl;
-					variable *var1 = returnVariable($5.label);
+					variable *var1 = returnVariable($6.label);
 					string aux = genLabel();
 
-					if(var1->nome == $5.label && var1->tipo != "char"){
-						$$.traducao_dec = $2.traducao_dec + $5.traducao_dec + "\tint " + aux + ";\n";
-						$$.traducao = "\tdo{\n\tINICIO_DO_WHILE:\n" + $2.traducao + "\t\t"+ aux + " = !( " + var1->tmp + " );\n\t\tif( " + aux + " ) goto FIM_DO_WHILE;\n\t\tgoto INICIO_WHILE;" +
-						"\n\tFIM_DO_WHILE:\n\t}while( " + var1->nome + " );\n";
+					if(var1->nome == $6.label && var1->tipo != "char"){
+						$$.traducao_dec = $3.traducao_dec + $6.traducao_dec + "\tint " + aux + ";\n";
+						$$.traducao = "\n"+inicio+":\n\t{\n" + $3.traducao + "\t}\n\t"+ aux + " = !( " + var1->tmp + " );\n\tif( " + aux + " ) goto "+fim+"\n" + $6.traducao +
+						"\tgoto "+inicio+";" + "\n"+fim+":\n";
 					}
-					else if($5.tipo == "bool"){
-						$$.traducao_dec = $2.traducao_dec + $5.traducao_dec;
-						$$.traducao = "\tdo{\n\tINICIO_DO_WHILE:\n" + $2.traducao + "\t\t"+ aux + " = !( " + $5.tmp + " );\n\t\tif( " + aux + " ) goto FIM_DO_WHILE;\n\t\tgoto INICIO_WHILE;" +
-						"\n\tFIM_DO_WHILE:\n" + $5.traducao +"\t}while( " + $5.tmp + " );\n";
+					else if($6.tipo == "bool"){
+						$$.traducao_dec = $3.traducao_dec + $6.traducao_dec;
+						$$.traducao = "\n"+inicio+":\n\t{\n" + $3.traducao + "\t}\n\t"+ aux + " = !( " + $6.tmp + " );\n\tif( " + aux + " ) goto " + fim +"\n"+ $6.traducao +
+						"\tgoto "+inicio+";" +"\n"+fim+":\n";
 					}
 					else{
 						yyerror("Expressão de condição não permitida\n");
@@ -550,19 +883,54 @@ DOWHILE 		: TK_DO BLOCO TK_WHILE '(' E ')'
 				}
 				;	
 
-BREAK			:
-				{
+SWITCH          : TK_SWITCH {Execucao atual = genBlock("For");
+					loops.push(atual);}'(' E ')' '{' BLOCK '}'
+                {
+                    cout<<"TK_Switch"<<endl;
+                }
+                ;
 
+BLOCK			: CASELIST
+				| CASELIST DEFAULTSTM	
+				;
+
+CASELIST		: CASE
+				| CASE CASELIST
+				;
+
+CASE            : TK_CASE TK_NUM ':' COMANDOS TK_BREAK ':'
+                {
+                }
+                ;
+
+DEFAULTSTM		: TK_DEFAULT ':' COMANDOS
+				;				
+
+BREAK			: TK_BREAK
+				{
+					if(loops.empty() == true){
+						yyerror("Comando break fora de um loop.\n");
+					}
+					$$.traducao = "\n\tgoto " + loops.top().Fim + ";//Break\n";
 				}							
 				;
 
-CONTINUE		:
+CONTINUE		: TK_CONTINUE
+				{
+					if(loops.empty() == true){
+						yyerror("Comando continue fora de um loop.\n");
+					}
+					$$.traducao = "\n\tgoto " + loops.top().Inicio + ";//Continue\n";
+				}
 				;
+
 
 E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declaradas ou valores quaisquer
 				{
 					cout<<"E+E"<<endl;
+					//operacao = "soma";
 					criaOperacao(&$$, $1, $3, "soma");
+					
 				}
 				| E '-' E //Subtração de dois termos, podendo esses serem variáveis já declaradas ou valores quaisquer
 				{
@@ -620,8 +988,8 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 					
 					if(v1->tipo == ""){
 						v1->tipo = "int";
-						v1->tipo = "0";
-						$$.traducao_dec = $1.traducao_dec + "\tint " + aux + ";\n";
+						v1->valor = "0";
+						$$.traducao_dec = $1.traducao_dec + "\tint " + v1->tmp + ";\n" + "\tint " + aux + ";\n";
 						$$.traducao = $1.traducao + "\t" + aux + " = 1;\n" + "\t" +  v1->tmp + " = " + v1->tmp + " + " + aux + ";\n";
 					}
 					else if(v1->tipo == "float" || v1->tipo == "int"){
@@ -643,8 +1011,8 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 					
 					if(v1->tipo == ""){
 						v1->tipo = "int";
-						v1->tipo = "0";
-						$$.traducao_dec = $1.traducao_dec + "\tint " + aux + ";\n";
+						v1->valor = "0";
+						$$.traducao_dec = $1.traducao_dec + "\tint " + v1->tmp + ";\n" + "\tint " + aux + ";\n";
 						$$.traducao = $1.traducao + "\t" + aux + " = 1;\n" + "\t" +  v1->tmp + " = " + v1->tmp + " - " + aux + ";\n";
 					}
 					else if(v1->tipo == "float" || v1->tipo == "int"){
@@ -720,12 +1088,12 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 
 				//------------------------------------------------ Atribuições sem valores iniciais ------------------------------------------------//
 					if(encontrei == true && found == true && var1->tipo == "" && var2->tipo != "" && $3.tmp == "")  {//Se o $3.tmp for igual a vazio a atribuição é somente de variável
-						if(var2->tipo == "string"){//e não da soma de duas coisas, pois se fosse da soma de duas coisas o $3.tmp iria ter valor
+						if(var2->tipo == "char *"){//e não da soma de duas coisas, pois se fosse da soma de duas coisas o $3.tmp iria ter valor
 							var1->valor = var2->valor;
 							var1->tipo = var2->tipo;
 							$$.traducao_dec ="\t" + var1->tipo + " " + var1->tmp + ";\n";
-							$$.traducao = $3.traducao + "\t" + var1->tmp + " =  (string*) malloc(" + to_string(var2->valor.size())  + "* sizeof(string));\n" + "\t" + 
-							var1->tmp + " = " + var2->tmp + ";\n";
+							$$.traducao = $3.traducao + "\t" + var1->tmp + " =  (char *) malloc(" + to_string(var2->valor.size()-2)  + "* sizeof(char));\n" + "\tstrcpy( " + 
+							var1->tmp + "," + var2->tmp + " );\n";
 						}
 						else{
 							var1->valor = var2->valor;
@@ -736,12 +1104,12 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 						cout<<"Tst1"<<endl;
 					}
 					else if(encontrei == true && var1->tipo == ""){
-						if($3.tipo == "string"){
+						if($3.tipo == "char *"){
 							var1->valor = $3.label;
 							var1->tipo = $3.tipo;
 							$$.traducao_dec = "\t" + var1->tipo + " " + var1->tmp + ";\n" + $3.traducao_dec;
-							$$.traducao = $3.traducao + "\t" + var1->tmp + " =  (string*) malloc(" + to_string($3.label.size())  + "* sizeof(string));\n" + "\t" + 
-							var1->tmp + " = " + $3.tmp + ";\n";
+							$$.traducao = $3.traducao + "\t" + var1->tmp + " =  (char *) malloc(" + to_string($3.label.size()-2)  + "* sizeof(char));\n" + "\tstrcpy( " + 
+							var1->tmp + "," + $3.tmp + " );\n";
 						}
 						else{
 							var1->valor = $3.label;
@@ -767,11 +1135,11 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 					}
 					else if(encontrei == true && found == true && var1->tipo != "" && var1->tipo == var2->tipo && $3.tmp == ""){//Verifica se o termo a ser atribuido é do mesmo tipo da variável a recebe-lo
 						
-						if(var2->tipo == "string"){//e não da soma de duas coisas, pois se fosse da soma de duas coisas o $3.tmp iria ter valor
+						if(var2->tipo == "char *"){//e não da soma de duas coisas, pois se fosse da soma de duas coisas o $3.tmp iria ter valor
 							var1->valor = var2->valor;
 							$$.traducao_dec = $3.traducao_dec;
-							$$.traducao = "\t" + var1->tmp + " =  (string*) malloc(" + to_string(var2->valor.size())  + "* sizeof(string));\n" + "\t" + 
-							var1->tmp + " = " + var2->tmp + ";\n";
+							$$.traducao = "\t" + var1->tmp + " =  (char *) malloc(" + to_string(var2->valor.size()-2)  + "* sizeof(char));\n" + "\tstrcpy( " + 
+							var1->tmp + "," + var2->tmp + " );\n";
 						}
 						else{
 							var1->valor = var2->valor;
@@ -782,11 +1150,11 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 					}
 					else if(encontrei == true && var1->tipo == $3.tipo){//Verifica se o termo a ser atribuido é um valor qualquer
 						
-						if($3.tipo == "string"){
+						if($3.tipo == "char *"){
 							var1->valor = $3.label;
 							$$.traducao_dec = $3.traducao_dec;
-							$$.traducao = $3.traducao + "\t" + var1->tmp + " =  (string*) malloc(" + to_string($3.label.size())  + "* sizeof(string));\n" + "\t" + 
-							var1->tmp + " = " + $3.tmp + ";\n";
+							$$.traducao = $3.traducao + "\t" + var1->tmp + " =  (char *) malloc(" + to_string($3.label.size()-2)  + "* sizeof(char));\n" + "\tstrcpy( " + 
+							var1->tmp + "," + $3.tmp + " );\n";
 						}
 						else{
 							var1->valor = $3.label;
@@ -936,11 +1304,12 @@ E 				: E '+' E //Soma de dois termos, podendo esses serem variáveis já declar
 				| TK_STRING
 				{
 					cout<<"tk_string"<<endl;
-					$$.tipo = "string";
+					$$.tipo = "char *";
 					$$.tmp = genLabel();
 					
 					$$.traducao_dec = "\t" + $$.tipo + " " + $$.tmp + ";\n";
-					$$.traducao = "\t" + $$.tmp + " =  (string*) malloc(" + to_string($$.label.size())  + "* sizeof(string));\n" + "\t" + $$.tmp + " = " + $$.label + ";\n";
+					$$.traducao = "\t" + $$.tmp + " =  (char*) malloc(" + to_string($$.label.size()-2)  + "* sizeof(char));\n" + "\tstrcpy( " + $$.tmp + "," +
+					$$.label + " );\n";
 				}
 				| TK_BOOL
 				{
@@ -990,8 +1359,32 @@ void yyerror(string MSG){
 }	
 
 string genLabel(){
-
 	return "temp" + to_string(valorVar++);
+}
+
+Execucao criaBloco(string inicio, string fim){
+	Execucao nova;
+	nova.Inicio = inicio;
+	nova.Fim = fim;
+	return nova;
+}
+
+Execucao genBlock(string tipo){
+	Execucao nova;
+	string numero = to_string(valorBlock++);
+	nova.Inicio = "INICIO_"+ tipo +"_"+ numero;
+	nova.Fim = "FIM_"+ tipo +"_"+ numero;
+	return nova;
+}
+
+bool verifyFunction(string nome){
+	
+	for(int i = 0; i < funcoes.size(); i++){
+		if(funcoes[i].nome == nome){
+			return true;
+		}
+	}
+	return false;
 }
 
 bool verifyVariableGlobal(string nome){
@@ -1016,6 +1409,20 @@ bool verifyVariableLocal(string nome){
 		}
 	}
 	return false;
+}
+
+Function *returnFunction(string nome){
+
+	funcaoAux.argumentos = "";
+	funcaoAux.nome = "";
+	funcaoAux.retorno = "";
+
+	for(int i = 0; i < funcoes.size(); i++){
+		if(funcoes[i].nome == nome){
+			return &funcoes[i];
+		}
+	}
+	return &funcaoAux;
 }
 
 variable *returnVariable(string nome){
@@ -1049,6 +1456,7 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 			dolardolar->tipo = "int";
 			dolardolar->label = std::to_string(aux);
 			dolardolar->tmp = v1->tmp + " + " + v2->tmp;
+			//dolardolar->operacao = "soma";
 		}
 		else if(v1->valor != "" && v1->tipo == "int" && dolar3.tipo == "int"){//int var + int num
 			int aux = std::stoi(v1->valor) + std::stoi(dolar3.label);
@@ -1057,6 +1465,7 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 			dolardolar->tipo = "int";
 			dolardolar->label = std::to_string(aux);
 			dolardolar->tmp = v1->tmp + " + " + dolar3.tmp;
+			//dolardolar->operacao = "soma";
 		}
 		else if(v2->valor != "" && v2->tipo == "int" && dolar1.tipo == "int"){//int num + int var
 			int aux = std::stoi(dolar1.label) + std::stoi(v2->valor);
@@ -1065,6 +1474,7 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 			dolardolar->tipo = "int";
 			dolardolar->label = std::to_string(aux);
 			dolardolar->tmp = dolar1.tmp + " + " + v2->tmp;
+			//dolardolar->operacao = "soma";
 		}
 		else if(dolar1.tipo == "int" && dolar3.tipo == "int"){//int num + int num
 			int aux = std::stoi(dolar1.label) + std::stoi(dolar3.label);
@@ -1073,6 +1483,7 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 			dolardolar->tipo = "int";
 			dolardolar->label = std::to_string(aux);
 			dolardolar->tmp = dolar1.tmp + " + " + dolar3.tmp;
+			//dolardolar->operacao = "soma";
 		}
 	//--------------------------------------------------------- Soma de float ---------------------------------------------------------//
 		else if(v1->valor != "" && v2->valor != "" && v1->tipo == "int" && v2->tipo == "float"){//int var + float var
@@ -1758,14 +2169,14 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 		else if(v1->valor != "" && v1->tipo == "int" && dolar3.tipo == "int"){//int var > int num
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " > " + dolar3.tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " > " + dolar3.tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
 		else if(v2->valor != "" && v2->tipo == "int" && dolar1.tipo == "int"){//int num > int var
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " > " + v2->tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " > " + v2->tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
@@ -1885,14 +2296,14 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 		else if(v1->valor != "" && v1->tipo == "int" && dolar3.tipo == "int"){//int var <= int num
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " <= " + dolar3.tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " <= " + dolar3.tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
 		else if(v2->valor != "" && v2->tipo == "int" && dolar1.tipo == "int"){//int num <= int var
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " <= " + v2->tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " <= " + v2->tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
@@ -2012,14 +2423,14 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 		else if(v1->valor != "" && v1->tipo == "int" && dolar3.tipo == "int"){//int var >= int num
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " >= " + dolar3.tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " >= " + dolar3.tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
 		else if(v2->valor != "" && v2->tipo == "int" && dolar1.tipo == "int"){//int num >= int var
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " >= " + v2->tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " >= " + v2->tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
@@ -2139,14 +2550,14 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 		else if(v1->valor != "" && v1->tipo == "int" && dolar3.tipo == "int"){//int var == int num
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " == " + dolar3.tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " == " + dolar3.tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
 		else if(v2->valor != "" && v2->tipo == "int" && dolar1.tipo == "int"){//int num == int var
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " == " + v2->tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " == " + v2->tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
@@ -2280,14 +2691,14 @@ void criaOperacao(atributos *dolardolar, atributos dolar1, atributos dolar3, str
 		else if(v1->valor != "" && v1->tipo == "int" && dolar3.tipo == "int"){//int var != int num
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " != " + dolar3.tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + v1->tmp + " != " + dolar3.tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
 		else if(v2->valor != "" && v2->tipo == "int" && dolar1.tipo == "int"){//int num != int var
 			string aux = genLabel();
 			dolardolar->traducao_dec = dolar1.traducao_dec + dolar3.traducao_dec + "\tint " + aux + ";\n";
-			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " != " + v2->tmp + "\n";
+			dolardolar->traducao = dolar1.traducao + dolar3.traducao + "\t" +  aux + " = " + dolar1.tmp + " != " + v2->tmp + ";\n";
 			dolardolar->tipo = "bool";
 			dolardolar->tmp = aux;
 		}
