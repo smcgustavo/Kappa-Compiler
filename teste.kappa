@@ -1,25 +1,37 @@
-global var a = 3;
-global var b;
-int main()  
-{
-    b = 3.3;
-    if(a >= b){
-        var t = 'c';
-        var ad = 500;
+float teste(float t,float a){
+    var c = "jOIJSOEJIoij";
+    a = 2;
+    var p = 't';
+    //print(a);
+    if(5>3){
+        return 9.8;
     }
-    for(var i = 0; i < 5; i++){
-        var aa = "JAIOUSEHSAIUEHISUAADASDASDASDASDSADASDASOESA";
-    }
-    while(50>4.5){
-        var l;
-        input(l);
-    }
-    do{
-        var teste = 'k';
-        print(teste);
-    }while(b);
-
-    var jk = "OHASIUEHAISEHAUI";
-    jk = "morreu";
-    a = 50;
+    return 3.3;
 }
+
+int pipoca(){
+    return 1;
+}
+
+global var bb;
+global var hh[] = {0.5,5.9,1.4};
+intt main()  
+{
+    var a = 3;
+    if(2 < 3){
+        //global var ll;
+        var a = 5;
+    }
+    //var vetor1[];
+    //var a = 4;
+    //var vetor2[] = {2,9,8};
+    //vetor2.add(10);
+    //vetor2.add(a);
+    //var vetor3[] = {'t','j','l'};
+    //var vetor4[] = {"KKKKKKKKKK"};
+   
+    for(var a = 0; a < 3; a++){
+
+    }
+}
+

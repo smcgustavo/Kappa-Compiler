@@ -24,16 +24,27 @@ STRING \"({LETRA}|{NUM})*\"
 
 "//".*      {}
 
-
 "\n"		{}
 
 {DELIM} 	{}
 
 "main"		{return TK_MAIN;}
 
+"break"     {return TK_BREAK;}
+
+"continue"  {return TK_CONTINUE;}
+
 "int"		{return TK_TIPO_INT;}
 
+"intt"   	{return TK_INT;}
+
 "float"     {return TK_TIPO_FLOAT;}
+
+"void"      {return TK_TIPO_VOID;} 
+
+"char"      {return TK_TIPO_CHAR;}
+
+"return"	{return TK_RETURN;}
 
 "var"       {return TK_DEC_VAR;}
 
@@ -51,13 +62,7 @@ STRING \"({LETRA}|{NUM})*\"
 
 "for"		{return TK_FOR;}
 
-"switch"    {return TK_SWITCH;}
-
-"case"      {return TK_CASE;}
-
-"break"     {return TK_BREAK;}
-
-"default"   {return TK_DEFAULT;}
+".add"      {return TK_ADD_VETOR;}
 
 "input"     {return TK_INPUT;}
 
@@ -71,6 +76,12 @@ STRING \"({LETRA}|{NUM})*\"
 
 "!="        {return TK_DIFF;}
 
+"switch"    {return TK_SWITCH;}
+
+"case"      {return TK_CASE;}
+
+"default"   {return TK_DEFAULT;}
+
 "<"         {return TK_LESS;}
 
 ">"         {return TK_GREATER;}
@@ -80,8 +91,6 @@ STRING \"({LETRA}|{NUM})*\"
 "||"        {return TK_OR;}   
 
 "&&"        {return TK_AND;}
-
-"//"        {return TK_COMENTARIO;}
 
 "++"        {return TK_UN_SUM;}
 
